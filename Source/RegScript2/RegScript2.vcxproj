@@ -20,6 +20,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Include\RegScript2.hpp" />
+    <ClInclude Include="Include\RegScript2_TokDoc.hpp" />
     <ClInclude Include="PCH.hpp" />
   </ItemGroup>
   <ItemGroup>
@@ -30,6 +31,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="RegScript2.cpp" />
+    <ClCompile Include="RegScript2_TokDoc.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{855609AD-687A-4738-B5C5-55121FE2DE25}</ProjectGuid>

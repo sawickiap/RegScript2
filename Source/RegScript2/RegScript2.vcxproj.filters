@@ -5,10 +5,14 @@
     <ClInclude Include="Include\RegScript2.hpp">
       <Filter>Include</Filter>
     </ClInclude>
+    <ClInclude Include="Include\RegScript2_TokDoc.hpp">
+      <Filter>Include</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="PCH.cpp" />
     <ClCompile Include="RegScript2.cpp" />
+    <ClCompile Include="RegScript2_TokDoc.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Include">
