@@ -3,6 +3,14 @@ Source/Debug/*
 Source/Release/*
 Source/x64/Debug/*
 Source/x64/Release/*
+Source/RegScript2/Debug/*
+Source/RegScript2/Release/*
+Source/RegScript2/x64/Debug/*
+Source/RegScript2/x64/Release/*
+Source/Test/Debug/*
+Source/Test/Release/*
+Source/Test/x64/Debug/*
+Source/Test/x64/Release/*
 Source/ipch/*
 Source/RegScript2.opensdf
 Source/RegScript2.sdf
