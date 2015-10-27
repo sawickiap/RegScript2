@@ -1,0 +1,8 @@
+Source/.vs/*
+Source/Debug/*
+Source/Release/*
+Source/x64/Debug/*
+Source/x64/Release/*
+Source/ipch/*
+Source/RegScript2.opensdf
+Source/RegScript2.sdf
