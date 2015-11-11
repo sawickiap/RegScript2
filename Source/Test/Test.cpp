@@ -190,10 +190,10 @@ TEST_F(Fixture1, SimpleTokDocLoad)
 TEST_F(Fixture1, SimpleTokDocLoadAlternative)
 {
 	const wchar_t* const DOC =
-		L"BoolParam=0;"
-		L"UintParam=0x2748;"
-		L"FloatParam=1.23e5;"
-		L"GameTimeParam=-1e-3;";
+		L"  BoolParam = 0;"
+		L"\tUintParam = 0x2748;"
+		L"\t\t  FloatParam = 1.23e5;   \t"
+		L"GameTimeParam = -1e-3;  ";
 
 	common::tokdoc::Node rootNode;
 	{
@@ -209,6 +209,36 @@ TEST_F(Fixture1, SimpleTokDocLoadAlternative)
 	EXPECT_EQ(0x2748, obj.UintParam.Value);
 	EXPECT_FLOAT_EQ(1.23e5f, obj.FloatParam.Value);
 	EXPECT_EQ(common::SecondsToGameTime(-1e-3f), obj.GameTimeParam.Value);
+}
+
+TEST_F(Fixture1, ContainerTokDocLoad)
+{
+	const wchar_t* const DOC =
+		L"ClassParam = {"
+		L"BoolParam=false;"
+		L"UintParam=10056;"
+		L"FloatParam=23.67;"
+		L"GameTimeParam=10.5;"
+		L"};"
+		L"FixedSizeArrayParam={9,8,7};";
+
+	common::tokdoc::Node rootNode;
+	{
+		common::Tokenizer tokenizer(DOC, wcslen(DOC), common::Tokenizer::FLAG_MULTILINE_STRINGS);
+		tokenizer.Next();
+		rootNode.LoadChildren(tokenizer);
+	}
+
+	ContainerClass obj;
+	rs2::LoadObjFromTokDoc(&obj, *m_ContainerClassDesc, rootNode);
+
+	EXPECT_EQ(false, obj.ClassParam.Value.BoolParam.Value);
+	EXPECT_EQ(10056, obj.ClassParam.Value.UintParam.Value);
+	EXPECT_FLOAT_EQ(23.67f, obj.ClassParam.Value.FloatParam.Value);
+	EXPECT_EQ(common::SecondsToGameTime(10.5f), obj.ClassParam.Value.GameTimeParam.Value);
+	EXPECT_EQ(9, obj.FixedSizeArrayParam.Values[0].Value);
+	EXPECT_EQ(8, obj.FixedSizeArrayParam.Values[1].Value);
+	EXPECT_EQ(7, obj.FixedSizeArrayParam.Values[2].Value);
 }
 
 int wmain(int argc, wchar_t** argv)
