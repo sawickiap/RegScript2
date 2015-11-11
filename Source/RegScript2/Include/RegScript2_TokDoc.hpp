@@ -6,16 +6,29 @@
 namespace RegScript2
 {
 
-void LoadParamFromTokDoc(void* dstParam, const BoolParamDesc& paramDesc, const common::tokdoc::Node& srcNode);
-void LoadParamFromTokDoc(void* dstParam, const UintParamDesc& paramDesc, const common::tokdoc::Node& srcNode);
-void LoadParamFromTokDoc(void* dstParam, const FloatParamDesc& paramDesc, const common::tokdoc::Node& srcNode);
-void LoadParamFromTokDoc(void* dstParam, const GameTimeParamDesc& paramDesc, const common::tokdoc::Node& srcNode);
-void LoadParamFromTokDoc(void* dstParam, const ClassParamDesc& paramDesc, const common::tokdoc::Node& srcNode);
-void LoadParamFromTokDoc(void* dstParam, const FixedSizeArrayParamDesc& paramDesc, const common::tokdoc::Node& srcNode);
+enum TOKDOC_FLAGS
+{
+	// Default. If parameter doesn't exist or is incorrect, throw error.
+	TOKDOC_FLAG_REQUIRED = 0x00,
+	// If parameter doesn't exist, continue. If incorrect, throw error.
+	TOKDOC_FLAG_OPTIONAL_CORRECT = 0x01,
+	// If parameter doesn't exist or is incorrect, continue.
+	TOKDOC_FLAG_OPTIONAL = 0x02,
+	// If parameter doesn't exist or is incorrect but continuing, initialize it with default value.
+	// Without this flag, its value is undefined.
+	TOKDOC_FLAG_DEFAULT = 0x04,
+};
+
+bool LoadParamFromTokDoc(void* dstParam, const BoolParamDesc& paramDesc, const common::tokdoc::Node& srcNode, uint32_t flags);
+bool LoadParamFromTokDoc(void* dstParam, const UintParamDesc& paramDesc, const common::tokdoc::Node& srcNode, uint32_t flags);
+bool LoadParamFromTokDoc(void* dstParam, const FloatParamDesc& paramDesc, const common::tokdoc::Node& srcNode, uint32_t flags);
+bool LoadParamFromTokDoc(void* dstParam, const GameTimeParamDesc& paramDesc, const common::tokdoc::Node& srcNode, uint32_t flags);
+bool LoadParamFromTokDoc(void* dstParam, const ClassParamDesc& paramDesc, const common::tokdoc::Node& srcNode, uint32_t flags);
+bool LoadParamFromTokDoc(void* dstParam, const FixedSizeArrayParamDesc& paramDesc, const common::tokdoc::Node& srcNode, uint32_t flags);
 // ADD NEW PARAMETER TYPES HERE.
 
-void LoadParamFromTokDoc(void* dstParam, const ParamDesc& paramDesc, const common::tokdoc::Node& srcNode);
+bool LoadParamFromTokDoc(void* dstParam, const ParamDesc& paramDesc, const common::tokdoc::Node& srcNode, uint32_t flags);
 
-void LoadObjFromTokDoc(void* dstObj, const ClassDesc& classDesc, const common::tokdoc::Node& srcNode);
+bool LoadObjFromTokDoc(void* dstObj, const ClassDesc& classDesc, const common::tokdoc::Node& srcNode, uint32_t flags);
 
 } // namespace RegScript2

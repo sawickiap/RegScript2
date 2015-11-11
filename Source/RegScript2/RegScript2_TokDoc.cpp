@@ -4,64 +4,86 @@
 namespace RegScript2
 {
 
-void LoadParamFromTokDoc(void* dstParam, const BoolParamDesc& paramDesc, const common::tokdoc::Node& srcNode)
+static inline bool IsFlagOptional(uint32_t flags)
+{
+	return (flags & (TOKDOC_FLAG_OPTIONAL | TOKDOC_FLAG_OPTIONAL_CORRECT)) != 0;
+}
+static inline bool IsFlagRequired(uint32_t flags)
+{
+	return !IsFlagOptional(flags);
+}
+
+bool LoadParamFromTokDoc(void* dstParam, const BoolParamDesc& paramDesc, const common::tokdoc::Node& srcNode, uint32_t flags)
 {
 	BoolParam* boolParam = (BoolParam*)dstParam;
-	if(!common::tokdoc::NodeTo(boolParam->Value, srcNode, /*TODO required*/false))
+	if(common::tokdoc::NodeTo(boolParam->Value, srcNode, IsFlagRequired(flags)))
+		return true;
+	else
 	{
-		// TODO Configurable on error.
-		paramDesc.SetToDefault(dstParam);
+		if((flags & TOKDOC_FLAG_DEFAULT))
+			paramDesc.SetToDefault(dstParam);
+		return false;
 	}
 }
 
-void LoadParamFromTokDoc(void* dstParam, const UintParamDesc& paramDesc, const common::tokdoc::Node& srcNode)
+bool LoadParamFromTokDoc(void* dstParam, const UintParamDesc& paramDesc, const common::tokdoc::Node& srcNode, uint32_t flags)
 {
 	UintParam* uintParam = (UintParam*)dstParam;
-	if(!common::tokdoc::NodeTo(uintParam->Value, srcNode, /*TODO required*/false))
+	if(common::tokdoc::NodeTo(uintParam->Value, srcNode, IsFlagRequired(flags)))
+		return true;
+	else
 	{
-		// TODO Configurable on error.
-		paramDesc.SetToDefault(dstParam);
+		if((flags & TOKDOC_FLAG_DEFAULT))
+			paramDesc.SetToDefault(dstParam);
+		return false;
 	}
 }
 
-void LoadParamFromTokDoc(void* dstParam, const FloatParamDesc& paramDesc, const common::tokdoc::Node& srcNode)
+bool LoadParamFromTokDoc(void* dstParam, const FloatParamDesc& paramDesc, const common::tokdoc::Node& srcNode, uint32_t flags)
 {
 	FloatParam* floatParam = (FloatParam*)dstParam;
-	if(!common::tokdoc::NodeTo(floatParam->Value, srcNode, /*TODO required*/false))
+	if(common::tokdoc::NodeTo(floatParam->Value, srcNode, IsFlagRequired(flags)))
+		return true;
+	else
 	{
-		// TODO Configurable on error.
-		paramDesc.SetToDefault(dstParam);
+		if((flags & TOKDOC_FLAG_DEFAULT))
+			paramDesc.SetToDefault(dstParam);
+		return false;
 	}
 }
 
-void LoadParamFromTokDoc(void* dstParam, const GameTimeParamDesc& paramDesc, const common::tokdoc::Node& srcNode)
+bool LoadParamFromTokDoc(void* dstParam, const GameTimeParamDesc& paramDesc, const common::tokdoc::Node& srcNode, uint32_t flags)
 {
 	float seconds = 0.f;
-	if(common::tokdoc::NodeTo(seconds, srcNode, /*TODO required*/false))
+	if(common::tokdoc::NodeTo(seconds, srcNode, IsFlagRequired(flags)))
 	{
 		GameTimeParam* gameTimeParam = (GameTimeParam*)dstParam;
 		gameTimeParam->Value = common::SecondsToGameTime(seconds);
+		return true;
 	}
 	else
 	{
-		// TODO Configurable on error.
-		paramDesc.SetToDefault(dstParam);
+		if((flags & TOKDOC_FLAG_DEFAULT))
+			paramDesc.SetToDefault(dstParam);
+		return false;
 	}
 }
 
-void LoadParamFromTokDoc(void* dstParam, const ClassParamDesc& paramDesc, const common::tokdoc::Node& srcNode)
+bool LoadParamFromTokDoc(void* dstParam, const ClassParamDesc& paramDesc, const common::tokdoc::Node& srcNode, uint32_t flags)
 {
-	LoadObjFromTokDoc(dstParam, *paramDesc.GetClassDesc(), srcNode);
+	return LoadObjFromTokDoc(dstParam, *paramDesc.GetClassDesc(), srcNode, flags);
 }
 
-void LoadParamFromTokDoc(void* dstParam, const FixedSizeArrayParamDesc& paramDesc, const common::tokdoc::Node& srcNode)
+bool LoadParamFromTokDoc(void* dstParam, const FixedSizeArrayParamDesc& paramDesc, const common::tokdoc::Node& srcNode, uint32_t flags)
 {
 	if(!srcNode.HasChildren())
 	{
-		// TODO Configurable on error.
+		if(!IsFlagOptional(flags))
+			throw common::Error(L"Array parameter is empty.", __TFILE__, __LINE__);
+		if((flags & TOKDOC_FLAG_DEFAULT))
+			paramDesc.SetToDefault(dstParam);
 		//PrintWarning(Format_r(L"Configuration array \"%s\" is empty.", subnodeName.c_str()).c_str());
-		//return false;
-		return;
+		return false;
 	}
 	bool allOk = true;
 	common::tokdoc::Node* elementNode = srcNode.GetFirstChild();
@@ -72,64 +94,87 @@ void LoadParamFromTokDoc(void* dstParam, const FixedSizeArrayParamDesc& paramDes
 	const size_t elementSize = elementParamDesc->GetParamSize();
 	while(elementNode && index < elementCount)
 	{
-		LoadParamFromTokDoc(dstElement, *elementParamDesc, *elementNode);
+		if(!LoadParamFromTokDoc(dstElement, *elementParamDesc, *elementNode, flags))
+			allOk = false;
 		elementNode = elementNode->GetNextSibling();
 		++index;
 		dstElement += elementSize;
 	}
 	if((elementNode == nullptr) != (index == elementCount))
 	{
-		// TODO Configurable on error.
+		if(!IsFlagOptional(flags))
+			throw common::Error(L"Array parameter has invalid size.", __TFILE__, __LINE__);
+		if((flags & TOKDOC_FLAG_DEFAULT))
+		{
+			for(; index < elementCount; ++index)
+				paramDesc.SetElementToDefault(dstParam, index);
+		}
 		//PrintWarning(Format_r(L"Configuration array \"%s\" has invalid size.", subnodeName.c_str(), index).c_str());
 		allOk = false;
 	}
-	// TODO Configurable on error.
-	//return allOk;
+	return allOk;
 }
 
 // ADD NEW PARAMETER TYPES HERE.
 
-void LoadParamFromTokDoc(void* dstParam, const ParamDesc& paramDesc, const common::tokdoc::Node& srcNode)
+bool LoadParamFromTokDoc(void* dstParam, const ParamDesc& paramDesc, const common::tokdoc::Node& srcNode, uint32_t flags)
 {
 	if(dynamic_cast<const BoolParamDesc*>(&paramDesc))
-		LoadParamFromTokDoc(dstParam, (const BoolParamDesc&)paramDesc, srcNode);
-	else if(dynamic_cast<const UintParamDesc*>(&paramDesc))
-		LoadParamFromTokDoc(dstParam, (const UintParamDesc&)paramDesc, srcNode);
-	else if(dynamic_cast<const FloatParamDesc*>(&paramDesc))
-		LoadParamFromTokDoc(dstParam, (const FloatParamDesc&)paramDesc, srcNode);
-	else if(dynamic_cast<const GameTimeParamDesc*>(&paramDesc))
-		LoadParamFromTokDoc(dstParam, (const GameTimeParamDesc&)paramDesc, srcNode);
-	else if(dynamic_cast<const ClassParamDesc*>(&paramDesc))
-		LoadParamFromTokDoc(dstParam, (const ClassParamDesc&)paramDesc, srcNode);
-	else if(dynamic_cast<const FixedSizeArrayParamDesc*>(&paramDesc))
-		LoadParamFromTokDoc(dstParam, (const FixedSizeArrayParamDesc&)paramDesc, srcNode);
+		return LoadParamFromTokDoc(dstParam, (const BoolParamDesc&)paramDesc, srcNode, flags);
+	if(dynamic_cast<const UintParamDesc*>(&paramDesc))
+		return LoadParamFromTokDoc(dstParam, (const UintParamDesc&)paramDesc, srcNode, flags);
+	if(dynamic_cast<const FloatParamDesc*>(&paramDesc))
+		return LoadParamFromTokDoc(dstParam, (const FloatParamDesc&)paramDesc, srcNode, flags);
+	if(dynamic_cast<const GameTimeParamDesc*>(&paramDesc))
+		return LoadParamFromTokDoc(dstParam, (const GameTimeParamDesc&)paramDesc, srcNode, flags);
+	if(dynamic_cast<const ClassParamDesc*>(&paramDesc))
+		return LoadParamFromTokDoc(dstParam, (const ClassParamDesc&)paramDesc, srcNode, flags);
+	if(dynamic_cast<const FixedSizeArrayParamDesc*>(&paramDesc))
+		return LoadParamFromTokDoc(dstParam, (const FixedSizeArrayParamDesc&)paramDesc, srcNode, flags);
 	// ADD NEW PARAMETER TYPES HERE.
-	else
-		assert(!"Unsupported parameter type.");
+	
+	assert(!"Unsupported parameter type.");
+	return false;
 }
 
-void LoadObjFromTokDoc(void* dstObj, const ClassDesc& classDesc, const common::tokdoc::Node& srcNode)
+bool LoadObjFromTokDoc(void* dstObj, const ClassDesc& classDesc, const common::tokdoc::Node& srcNode, uint32_t flags)
 {
 	const ClassDesc* baseClassDesc = classDesc.GetBaseClassDesc();
+	bool allOk = true;
 	if(baseClassDesc)
-		LoadObjFromTokDoc(dstObj, *baseClassDesc, srcNode);
+		allOk = LoadObjFromTokDoc(dstObj, *baseClassDesc, srcNode, flags);
 
 	for(size_t i = 0, count = classDesc.Params.size(); i < count; ++i)
 	{
+		ERR_TRY;
+
 		common::tokdoc::Node* subNode = srcNode.FindFirstChild(classDesc.Names[i]);
 		if(subNode)
 		{
-			LoadParamFromTokDoc(
+			if(!LoadParamFromTokDoc(
 				classDesc.AccessRawParam(dstObj, i),
 				*classDesc.Params[i],
-				*subNode);
+				*subNode,
+				flags))
+			{
+				allOk = false;
+			}
 		}
 		else
 		{
-			// TODO Configurable on error.
-			classDesc.SetParamToDefault(dstObj, i);
+			if(IsFlagOptional(flags))
+			{
+				if((flags & TOKDOC_FLAG_DEFAULT))
+					classDesc.SetParamToDefault(dstObj, i);
+				allOk = false;
+			}
+			else
+				throw common::Error(L"Parameter not found.", __TFILE__, __LINE__);
 		}
+
+		ERR_CATCH(L"RegScript2 TokDoc parameter: " + classDesc.Names[i]);
 	}
+	return allOk;
 }
 
 } // namespace RegScript2

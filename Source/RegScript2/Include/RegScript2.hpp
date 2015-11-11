@@ -121,8 +121,11 @@ public:
 	size_t GetCount() const { return m_Count; }
 
 	inline virtual size_t GetParamSize() const;
-	inline virtual void SetToDefault(void* param) const;
-	inline virtual void Copy(void* dstParam, const void* srcParam) const;
+	virtual void SetToDefault(void* param) const;
+	virtual void Copy(void* dstParam, const void* srcParam) const;
+
+	void SetElementToDefault(void* param, size_t index) const;
+	void CopyElement(void* dstParam, const void* srcParam, size_t index) const;
 
 private:
 	std::shared_ptr<const ParamDesc> m_ElementParamDesc;
@@ -270,30 +273,6 @@ inline void ClassParamDesc::Copy(void* dstParam, const void* srcParam) const
 inline size_t FixedSizeArrayParamDesc::GetParamSize() const
 {
 	return m_ElementParamDesc->GetParamSize() * m_Count;
-}
-
-inline void FixedSizeArrayParamDesc::SetToDefault(void* param) const
-{
-	char* element = (char*)param;
-	size_t elementSize = m_ElementParamDesc->GetParamSize();
-	for(size_t i = 0; i < m_Count; ++i)
-	{
-		m_ElementParamDesc->SetToDefault(element);
-		element += elementSize;
-	}
-}
-
-inline void FixedSizeArrayParamDesc::Copy(void* dstParam, const void* srcParam) const
-{
-	char* dstElement = (char*)dstParam;
-	const char* srcElement = (const char*)srcParam;
-	size_t elementSize = m_ElementParamDesc->GetParamSize();
-	for(size_t i = 0; i < m_Count; ++i)
-	{
-		m_ElementParamDesc->Copy(dstElement, srcElement);
-		dstElement += elementSize;
-		srcElement += elementSize;
-	}
 }
 
 } // namespace RegScript2

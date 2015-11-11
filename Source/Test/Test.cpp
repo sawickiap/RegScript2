@@ -179,7 +179,8 @@ TEST_F(Fixture1, SimpleTokDocLoad)
 	}
 
 	SimpleClass obj;
-	rs2::LoadObjFromTokDoc(&obj, *m_SimpleClassDesc, rootNode);
+	bool ok = rs2::LoadObjFromTokDoc(&obj, *m_SimpleClassDesc, rootNode, rs2::TOKDOC_FLAG_REQUIRED);
+	EXPECT_TRUE(ok);
 
 	EXPECT_EQ(false, obj.BoolParam.Value);
 	EXPECT_EQ(10056, obj.UintParam.Value);
@@ -193,7 +194,7 @@ TEST_F(Fixture1, SimpleTokDocLoadAlternative)
 		L"  BoolParam = 0;"
 		L"\tUintParam = 0x2748;"
 		L"\t\t  FloatParam = 1.23e5;   \t"
-		L"GameTimeParam = -1e-3;  ";
+		L"GameTimeParam = -1e-3;  // A comment... ";
 
 	common::tokdoc::Node rootNode;
 	{
@@ -203,12 +204,54 @@ TEST_F(Fixture1, SimpleTokDocLoadAlternative)
 	}
 
 	SimpleClass obj;
-	rs2::LoadObjFromTokDoc(&obj, *m_SimpleClassDesc, rootNode);
+	bool ok = rs2::LoadObjFromTokDoc(&obj, *m_SimpleClassDesc, rootNode, rs2::TOKDOC_FLAG_REQUIRED);
+	EXPECT_TRUE(ok);
 
 	EXPECT_EQ(false, obj.BoolParam.Value);
 	EXPECT_EQ(0x2748, obj.UintParam.Value);
 	EXPECT_FLOAT_EQ(1.23e5f, obj.FloatParam.Value);
 	EXPECT_EQ(common::SecondsToGameTime(-1e-3f), obj.GameTimeParam.Value);
+}
+
+TEST_F(Fixture1, SimpleTokDocLoadNegativeNotFound)
+{
+	const wchar_t* const DOC =
+		L"BoolParam=false;"
+		L"UintParam=10056;"
+		L"GameTimeParam=10.5;";
+
+	common::tokdoc::Node rootNode;
+	{
+		common::Tokenizer tokenizer(DOC, wcslen(DOC), common::Tokenizer::FLAG_MULTILINE_STRINGS);
+		tokenizer.Next();
+		rootNode.LoadChildren(tokenizer);
+	}
+
+	SimpleClass obj;
+	EXPECT_THROW(
+		rs2::LoadObjFromTokDoc(&obj, *m_SimpleClassDesc, rootNode, rs2::TOKDOC_FLAG_REQUIRED),
+		common::Error);
+}
+
+TEST_F(Fixture1, SimpleTokDocLoadNegativeIncorrect)
+{
+	const wchar_t* const DOC =
+		L"BoolParam=false;"
+		L"UintParam=10056;"
+		L"FloatParam=\"abcd\";"
+		L"GameTimeParam=10.5;";
+
+	common::tokdoc::Node rootNode;
+	{
+		common::Tokenizer tokenizer(DOC, wcslen(DOC), common::Tokenizer::FLAG_MULTILINE_STRINGS);
+		tokenizer.Next();
+		rootNode.LoadChildren(tokenizer);
+	}
+
+	SimpleClass obj;
+	EXPECT_THROW(
+		rs2::LoadObjFromTokDoc(&obj, *m_SimpleClassDesc, rootNode, rs2::TOKDOC_FLAG_REQUIRED),
+		common::Error);
 }
 
 TEST_F(Fixture1, ContainerTokDocLoad)
@@ -230,7 +273,8 @@ TEST_F(Fixture1, ContainerTokDocLoad)
 	}
 
 	ContainerClass obj;
-	rs2::LoadObjFromTokDoc(&obj, *m_ContainerClassDesc, rootNode);
+	bool ok = rs2::LoadObjFromTokDoc(&obj, *m_ContainerClassDesc, rootNode, rs2::TOKDOC_FLAG_REQUIRED);
+	EXPECT_TRUE(ok);
 
 	EXPECT_EQ(false, obj.ClassParam.Value.BoolParam.Value);
 	EXPECT_EQ(10056, obj.ClassParam.Value.UintParam.Value);
@@ -239,6 +283,63 @@ TEST_F(Fixture1, ContainerTokDocLoad)
 	EXPECT_EQ(9, obj.FixedSizeArrayParam.Values[0].Value);
 	EXPECT_EQ(8, obj.FixedSizeArrayParam.Values[1].Value);
 	EXPECT_EQ(7, obj.FixedSizeArrayParam.Values[2].Value);
+}
+
+TEST_F(Fixture1, ContainerTokDocLoadOptionalCorrectDefault)
+{
+	const wchar_t* const DOC = L"";
+
+	common::tokdoc::Node rootNode;
+	{
+		common::Tokenizer tokenizer(DOC, wcslen(DOC), common::Tokenizer::FLAG_MULTILINE_STRINGS);
+		tokenizer.Next();
+		rootNode.LoadChildren(tokenizer);
+	}
+
+	ContainerClass obj;
+	bool ok = rs2::LoadObjFromTokDoc(&obj, *m_ContainerClassDesc, rootNode,
+		rs2::TOKDOC_FLAG_OPTIONAL_CORRECT | rs2::TOKDOC_FLAG_DEFAULT);
+	EXPECT_FALSE(ok);
+
+	EXPECT_EQ(true, obj.ClassParam.Value.BoolParam.Value);
+	EXPECT_EQ(123, obj.ClassParam.Value.UintParam.Value);
+	EXPECT_EQ(3.14f, obj.ClassParam.Value.FloatParam.Value);
+	EXPECT_EQ(common::MillisecondsToGameTime(1023), obj.ClassParam.Value.GameTimeParam.Value);
+	EXPECT_EQ(124, obj.FixedSizeArrayParam.Values[0].Value);
+	EXPECT_EQ(124, obj.FixedSizeArrayParam.Values[1].Value);
+	EXPECT_EQ(124, obj.FixedSizeArrayParam.Values[2].Value);
+}
+
+TEST_F(Fixture1, ContainerTokDocLoadOptionalIncorrectDefault)
+{
+	const wchar_t* const DOC =
+		L"ClassParam = {"
+		L"BoolParam=\"dupa\";"
+		L"UintParam=\"dupa\";"
+		L"FloatParam=\"dupa\";"
+		L"GameTimeParam=\"dupa\";"
+		L"};"
+		L"FixedSizeArrayParam={\"dupa\", \"dupa\"};";
+
+	common::tokdoc::Node rootNode;
+	{
+		common::Tokenizer tokenizer(DOC, wcslen(DOC), common::Tokenizer::FLAG_MULTILINE_STRINGS);
+		tokenizer.Next();
+		rootNode.LoadChildren(tokenizer);
+	}
+
+	ContainerClass obj;
+	bool ok = rs2::LoadObjFromTokDoc(&obj, *m_ContainerClassDesc, rootNode,
+		rs2::TOKDOC_FLAG_OPTIONAL | rs2::TOKDOC_FLAG_DEFAULT);
+	EXPECT_FALSE(ok);
+
+	EXPECT_EQ(true, obj.ClassParam.Value.BoolParam.Value);
+	EXPECT_EQ(123, obj.ClassParam.Value.UintParam.Value);
+	EXPECT_EQ(3.14f, obj.ClassParam.Value.FloatParam.Value);
+	EXPECT_EQ(common::MillisecondsToGameTime(1023), obj.ClassParam.Value.GameTimeParam.Value);
+	EXPECT_EQ(124, obj.FixedSizeArrayParam.Values[0].Value);
+	EXPECT_EQ(124, obj.FixedSizeArrayParam.Values[1].Value);
+	EXPECT_EQ(124, obj.FixedSizeArrayParam.Values[2].Value);
 }
 
 int wmain(int argc, wchar_t** argv)
