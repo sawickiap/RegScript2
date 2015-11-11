@@ -2,6 +2,7 @@
 
 #include <Common/Base.hpp>
 #include <Common/DateTime.hpp>
+#include <Common/Error.hpp>
 
 #include <string>
 #include <vector>

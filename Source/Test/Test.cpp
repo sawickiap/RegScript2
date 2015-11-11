@@ -1,4 +1,6 @@
 #include <RegScript2.hpp>
+#include <RegScript2_TokDoc.hpp>
+#include <Common/Tokenizer.hpp>
 #include <memory>
 #include <cstddef>
 #include <gtest/gtest.h>
@@ -65,45 +67,6 @@ std::unique_ptr<rs2::ClassDesc> SimpleClass::CreateClassDesc()
 	return classDesc;
 }
 
-class SimpleFixture : public ::testing::Test
-{
-protected:
-	std::unique_ptr<rs2::ClassDesc> m_SimpleClassDesc;
-
-	SimpleFixture();
-	~SimpleFixture() { }
-	virtual void SetUp() { }
-	virtual void TearDown() { }
-};
-
-SimpleFixture::SimpleFixture() :
-	m_SimpleClassDesc(SimpleClass::CreateClassDesc())
-{
-}
-
-TEST_F(SimpleFixture, SetDefault)
-{
-	SimpleClass obj;
-	m_SimpleClassDesc->SetObjToDefault(&obj);
-
-	EXPECT_EQ(true, obj.BoolParam.Value);
-	EXPECT_EQ(123, obj.UintParam.Value);
-	EXPECT_EQ(3.14f, obj.FloatParam.Value);
-	EXPECT_EQ(common::MillisecondsToGameTime(1023), obj.GameTimeParam.Value);
-}
-
-TEST_F(SimpleFixture, CopyObj)
-{
-	SimpleClass obj1, obj2;
-	m_SimpleClassDesc->SetObjToDefault(&obj1);
-	m_SimpleClassDesc->CopyObj(&obj2, &obj1);
-
-	EXPECT_EQ(true, obj2.BoolParam.Value);
-	EXPECT_EQ(123, obj2.UintParam.Value);
-	EXPECT_EQ(3.14f, obj2.FloatParam.Value);
-	EXPECT_EQ(common::MillisecondsToGameTime(1023), obj2.GameTimeParam.Value);
-}
-
 class ContainerClass
 {
 public:
@@ -130,25 +93,48 @@ std::unique_ptr<rs2::ClassDesc> ContainerClass::CreateClassDesc(const rs2::Class
 	return classDesc;
 }
 
-class ContainerFixture : public ::testing::Test
+class Fixture1 : public ::testing::Test
 {
 protected:
 	std::unique_ptr<rs2::ClassDesc> m_SimpleClassDesc;
 	std::unique_ptr<rs2::ClassDesc> m_ContainerClassDesc;
 
-	ContainerFixture();
-	~ContainerFixture() { }
+	Fixture1();
+	~Fixture1() { }
 	virtual void SetUp() { }
 	virtual void TearDown() { }
 };
 
-ContainerFixture::ContainerFixture() :
+Fixture1::Fixture1() :
 	m_SimpleClassDesc(SimpleClass::CreateClassDesc()),
 	m_ContainerClassDesc(ContainerClass::CreateClassDesc(m_SimpleClassDesc.get()))
 {
 }
 
-TEST_F(ContainerFixture, SetDefault)
+TEST_F(Fixture1, SimpleSetDefault)
+{
+	SimpleClass obj;
+	m_SimpleClassDesc->SetObjToDefault(&obj);
+
+	EXPECT_EQ(true, obj.BoolParam.Value);
+	EXPECT_EQ(123, obj.UintParam.Value);
+	EXPECT_EQ(3.14f, obj.FloatParam.Value);
+	EXPECT_EQ(common::MillisecondsToGameTime(1023), obj.GameTimeParam.Value);
+}
+
+TEST_F(Fixture1, SimpleCopyObj)
+{
+	SimpleClass obj1, obj2;
+	m_SimpleClassDesc->SetObjToDefault(&obj1);
+	m_SimpleClassDesc->CopyObj(&obj2, &obj1);
+
+	EXPECT_EQ(true, obj2.BoolParam.Value);
+	EXPECT_EQ(123, obj2.UintParam.Value);
+	EXPECT_EQ(3.14f, obj2.FloatParam.Value);
+	EXPECT_EQ(common::MillisecondsToGameTime(1023), obj2.GameTimeParam.Value);
+}
+
+TEST_F(Fixture1, ContainerSetDefault)
 {
 	ContainerClass obj;
 	m_ContainerClassDesc->SetObjToDefault(&obj);
@@ -162,7 +148,7 @@ TEST_F(ContainerFixture, SetDefault)
 	EXPECT_EQ(124, obj.FixedSizeArrayParam.Values[2].Value);
 }
 
-TEST_F(ContainerFixture, CopyObj)
+TEST_F(Fixture1, ContainerCopyObj)
 {
 	ContainerClass obj1, obj2;
 	m_ContainerClassDesc->SetObjToDefault(&obj1);
@@ -175,6 +161,54 @@ TEST_F(ContainerFixture, CopyObj)
 	EXPECT_EQ(124, obj2.FixedSizeArrayParam.Values[0].Value);
 	EXPECT_EQ(124, obj2.FixedSizeArrayParam.Values[1].Value);
 	EXPECT_EQ(124, obj2.FixedSizeArrayParam.Values[2].Value);
+}
+
+TEST_F(Fixture1, SimpleTokDocLoad)
+{
+	const wchar_t* const DOC =
+		L"BoolParam=false;"
+		L"UintParam=10056;"
+		L"FloatParam=23.67;"
+		L"GameTimeParam=10.5;";
+
+	common::tokdoc::Node rootNode;
+	{
+		common::Tokenizer tokenizer(DOC, wcslen(DOC), common::Tokenizer::FLAG_MULTILINE_STRINGS);
+		tokenizer.Next();
+		rootNode.LoadChildren(tokenizer);
+	}
+
+	SimpleClass obj;
+	rs2::LoadObjFromTokDoc(&obj, *m_SimpleClassDesc, rootNode);
+
+	EXPECT_EQ(false, obj.BoolParam.Value);
+	EXPECT_EQ(10056, obj.UintParam.Value);
+	EXPECT_FLOAT_EQ(23.67f, obj.FloatParam.Value);
+	EXPECT_EQ(common::SecondsToGameTime(10.5f), obj.GameTimeParam.Value);
+}
+
+TEST_F(Fixture1, SimpleTokDocLoadAlternative)
+{
+	const wchar_t* const DOC =
+		L"BoolParam=0;"
+		L"UintParam=0x2748;"
+		L"FloatParam=1.23e5;"
+		L"GameTimeParam=-1e-3;";
+
+	common::tokdoc::Node rootNode;
+	{
+		common::Tokenizer tokenizer(DOC, wcslen(DOC), common::Tokenizer::FLAG_MULTILINE_STRINGS);
+		tokenizer.Next();
+		rootNode.LoadChildren(tokenizer);
+	}
+
+	SimpleClass obj;
+	rs2::LoadObjFromTokDoc(&obj, *m_SimpleClassDesc, rootNode);
+
+	EXPECT_EQ(false, obj.BoolParam.Value);
+	EXPECT_EQ(0x2748, obj.UintParam.Value);
+	EXPECT_FLOAT_EQ(1.23e5f, obj.FloatParam.Value);
+	EXPECT_EQ(common::SecondsToGameTime(-1e-3f), obj.GameTimeParam.Value);
 }
 
 int wmain(int argc, wchar_t** argv)

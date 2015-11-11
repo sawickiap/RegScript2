@@ -12,6 +12,7 @@ void LoadParamFromTokDoc(void* dstParam, const FloatParamDesc& paramDesc, const 
 void LoadParamFromTokDoc(void* dstParam, const GameTimeParamDesc& paramDesc, const common::tokdoc::Node& srcNode);
 void LoadParamFromTokDoc(void* dstParam, const ClassParamDesc& paramDesc, const common::tokdoc::Node& srcNode);
 void LoadParamFromTokDoc(void* dstParam, const FixedSizeArrayParamDesc& paramDesc, const common::tokdoc::Node& srcNode);
+// ADD NEW PARAMETER TYPES HERE.
 
 void LoadParamFromTokDoc(void* dstParam, const ParamDesc& paramDesc, const common::tokdoc::Node& srcNode);
 

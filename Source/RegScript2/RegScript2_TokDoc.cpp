@@ -87,6 +87,8 @@ void LoadParamFromTokDoc(void* dstParam, const FixedSizeArrayParamDesc& paramDes
 	//return allOk;
 }
 
+// ADD NEW PARAMETER TYPES HERE.
+
 void LoadParamFromTokDoc(void* dstParam, const ParamDesc& paramDesc, const common::tokdoc::Node& srcNode)
 {
 	if(dynamic_cast<const BoolParamDesc*>(&paramDesc))
@@ -101,6 +103,7 @@ void LoadParamFromTokDoc(void* dstParam, const ParamDesc& paramDesc, const commo
 		LoadParamFromTokDoc(dstParam, (const ClassParamDesc&)paramDesc, srcNode);
 	else if(dynamic_cast<const FixedSizeArrayParamDesc*>(&paramDesc))
 		LoadParamFromTokDoc(dstParam, (const FixedSizeArrayParamDesc&)paramDesc, srcNode);
+	// ADD NEW PARAMETER TYPES HERE.
 	else
 		assert(!"Unsupported parameter type.");
 }
