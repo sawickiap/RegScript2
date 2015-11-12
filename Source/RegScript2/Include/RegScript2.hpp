@@ -14,6 +14,13 @@
 namespace RegScript2
 {
 
+class IPrinter
+{
+public:
+	virtual ~IPrinter() { }
+	virtual void printf(const wchar_t* format, ...) = 0;
+};
+
 class StructDesc;
 
 class BoolParam

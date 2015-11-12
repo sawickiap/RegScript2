@@ -31,6 +31,40 @@ void Environment::TearDown()
 {
 }
 
+class CPrinter : public rs2::IPrinter
+{
+public:
+	virtual void printf(const wchar_t* format, ...);
+
+	bool TextContains(const wchar_t* str) const;
+
+private:
+	std::wstring m_Text;
+};
+
+void CPrinter::printf(const wchar_t* format, ...)
+{
+	va_list argList;
+	va_start( argList, format );
+
+	size_t dstLen = (size_t)_vscwprintf(format, argList);
+	if(dstLen)
+	{
+		std::vector<wchar_t> buf(dstLen + 1);
+		wchar_t* bufPtr = &buf[0];
+		vswprintf(bufPtr, dstLen + 1, format, argList);
+		m_Text += bufPtr;
+	}
+	m_Text += L"\n";
+
+	va_end( argList );
+}
+
+bool CPrinter::TextContains(const wchar_t* str) const
+{
+	return m_Text.find(str) != std::wstring::npos;
+}
+
 class SimpleStruct
 {
 public:
@@ -227,7 +261,11 @@ TEST_F(Fixture1, SimpleTokDocLoad)
 	}
 
 	SimpleStruct obj;
-	bool ok = rs2::LoadObjFromTokDoc(&obj, *m_SimpleStructDesc, rootNode, rs2::TOKDOC_FLAG_REQUIRED);
+	bool ok = rs2::LoadObjFromTokDoc(
+		&obj,
+		*m_SimpleStructDesc,
+		rootNode,
+		rs2::STokDocLoadConfig(rs2::TOKDOC_FLAG_REQUIRED));
 	EXPECT_TRUE(ok);
 
 	EXPECT_EQ(false, obj.BoolParam.Value);
@@ -252,7 +290,11 @@ TEST_F(Fixture1, SimpleTokDocLoadAlternative)
 	}
 
 	SimpleStruct obj;
-	bool ok = rs2::LoadObjFromTokDoc(&obj, *m_SimpleStructDesc, rootNode, rs2::TOKDOC_FLAG_REQUIRED);
+	bool ok = rs2::LoadObjFromTokDoc(
+		&obj,
+		*m_SimpleStructDesc,
+		rootNode,
+		rs2::STokDocLoadConfig(rs2::TOKDOC_FLAG_REQUIRED));
 	EXPECT_TRUE(ok);
 
 	EXPECT_EQ(false, obj.BoolParam.Value);
@@ -277,7 +319,11 @@ TEST_F(Fixture1, SimpleTokDocLoadNegativeNotFound)
 
 	SimpleStruct obj;
 	EXPECT_THROW(
-		rs2::LoadObjFromTokDoc(&obj, *m_SimpleStructDesc, rootNode, rs2::TOKDOC_FLAG_REQUIRED),
+		rs2::LoadObjFromTokDoc(
+			&obj,
+			*m_SimpleStructDesc,
+			rootNode,
+			rs2::STokDocLoadConfig(rs2::TOKDOC_FLAG_REQUIRED)),
 		common::Error);
 }
 
@@ -298,8 +344,66 @@ TEST_F(Fixture1, SimpleTokDocLoadNegativeIncorrect)
 
 	SimpleStruct obj;
 	EXPECT_THROW(
-		rs2::LoadObjFromTokDoc(&obj, *m_SimpleStructDesc, rootNode, rs2::TOKDOC_FLAG_REQUIRED),
+		rs2::LoadObjFromTokDoc(
+			&obj,
+			*m_SimpleStructDesc,
+			rootNode,
+			rs2::STokDocLoadConfig(rs2::TOKDOC_FLAG_REQUIRED)),
 		common::Error);
+}
+
+TEST_F(Fixture1, SimpleTokDocLoadNotFoundWarnings)
+{
+	const wchar_t* const DOC = L"";
+
+	common::tokdoc::Node rootNode;
+	{
+		common::Tokenizer tokenizer(DOC, wcslen(DOC), common::Tokenizer::FLAG_MULTILINE_STRINGS);
+		tokenizer.Next();
+		rootNode.LoadChildren(tokenizer);
+	}
+
+	CPrinter printer;
+	SimpleStruct obj;
+	bool ok = rs2::LoadObjFromTokDoc(
+		&obj,
+		*m_SimpleStructDesc,
+		rootNode,
+		rs2::STokDocLoadConfig(rs2::TOKDOC_FLAG_OPTIONAL_CORRECT, &printer));
+	EXPECT_FALSE(ok);
+	EXPECT_TRUE(printer.TextContains(L"BoolParam"));
+	EXPECT_TRUE(printer.TextContains(L"UintParam"));
+	EXPECT_TRUE(printer.TextContains(L"FloatParam"));
+	EXPECT_TRUE(printer.TextContains(L"GameTimeParam"));
+}
+
+TEST_F(Fixture1, SimpleTokDocLoadInvalidWarnings)
+{
+	const wchar_t* const DOC =
+		L"BoolParam=\"abc\";"
+		L"UintParam=\"abc\";"
+		L"FloatParam=\"abc\";"
+		L"GameTimeParam=\"abc\";";
+
+	common::tokdoc::Node rootNode;
+	{
+		common::Tokenizer tokenizer(DOC, wcslen(DOC), common::Tokenizer::FLAG_MULTILINE_STRINGS);
+		tokenizer.Next();
+		rootNode.LoadChildren(tokenizer);
+	}
+
+	CPrinter printer;
+	SimpleStruct obj;
+	bool ok = rs2::LoadObjFromTokDoc(
+		&obj,
+		*m_SimpleStructDesc,
+		rootNode,
+		rs2::STokDocLoadConfig(rs2::TOKDOC_FLAG_OPTIONAL, &printer));
+	EXPECT_FALSE(ok);
+	EXPECT_TRUE(printer.TextContains(L"BoolParam"));
+	EXPECT_TRUE(printer.TextContains(L"UintParam"));
+	EXPECT_TRUE(printer.TextContains(L"FloatParam"));
+	EXPECT_TRUE(printer.TextContains(L"GameTimeParam"));
 }
 
 TEST_F(Fixture1, ContainerTokDocLoad)
@@ -321,7 +425,11 @@ TEST_F(Fixture1, ContainerTokDocLoad)
 	}
 
 	ContainerStruct obj;
-	bool ok = rs2::LoadObjFromTokDoc(&obj, *m_ContainerStructDesc, rootNode, rs2::TOKDOC_FLAG_REQUIRED);
+	bool ok = rs2::LoadObjFromTokDoc(
+		&obj,
+		*m_ContainerStructDesc,
+		rootNode,
+		rs2::STokDocLoadConfig(rs2::TOKDOC_FLAG_REQUIRED));
 	EXPECT_TRUE(ok);
 
 	EXPECT_EQ(false, obj.StructParam.Value.BoolParam.Value);
@@ -345,8 +453,11 @@ TEST_F(Fixture1, ContainerTokDocLoadOptionalCorrectDefault)
 	}
 
 	ContainerStruct obj;
-	bool ok = rs2::LoadObjFromTokDoc(&obj, *m_ContainerStructDesc, rootNode,
-		rs2::TOKDOC_FLAG_OPTIONAL_CORRECT | rs2::TOKDOC_FLAG_DEFAULT);
+	bool ok = rs2::LoadObjFromTokDoc(
+		&obj,
+		*m_ContainerStructDesc,
+		rootNode,
+		rs2::STokDocLoadConfig(rs2::TOKDOC_FLAG_OPTIONAL_CORRECT | rs2::TOKDOC_FLAG_DEFAULT));
 	EXPECT_FALSE(ok);
 
 	EXPECT_EQ(true, obj.StructParam.Value.BoolParam.Value);
@@ -377,8 +488,11 @@ TEST_F(Fixture1, ContainerTokDocLoadOptionalIncorrectDefault)
 	}
 
 	ContainerStruct obj;
-	bool ok = rs2::LoadObjFromTokDoc(&obj, *m_ContainerStructDesc, rootNode,
-		rs2::TOKDOC_FLAG_OPTIONAL | rs2::TOKDOC_FLAG_DEFAULT);
+	bool ok = rs2::LoadObjFromTokDoc(
+		&obj,
+		*m_ContainerStructDesc,
+		rootNode,
+		rs2::STokDocLoadConfig(rs2::TOKDOC_FLAG_OPTIONAL | rs2::TOKDOC_FLAG_DEFAULT));
 	EXPECT_FALSE(ok);
 
 	EXPECT_EQ(true, obj.StructParam.Value.BoolParam.Value);
