@@ -23,12 +23,12 @@ bool LoadParamFromTokDoc(void* dstParam, const BoolParamDesc& paramDesc, const c
 bool LoadParamFromTokDoc(void* dstParam, const UintParamDesc& paramDesc, const common::tokdoc::Node& srcNode, uint32_t flags);
 bool LoadParamFromTokDoc(void* dstParam, const FloatParamDesc& paramDesc, const common::tokdoc::Node& srcNode, uint32_t flags);
 bool LoadParamFromTokDoc(void* dstParam, const GameTimeParamDesc& paramDesc, const common::tokdoc::Node& srcNode, uint32_t flags);
-bool LoadParamFromTokDoc(void* dstParam, const ClassParamDesc& paramDesc, const common::tokdoc::Node& srcNode, uint32_t flags);
+bool LoadParamFromTokDoc(void* dstParam, const StructParamDesc& paramDesc, const common::tokdoc::Node& srcNode, uint32_t flags);
 bool LoadParamFromTokDoc(void* dstParam, const FixedSizeArrayParamDesc& paramDesc, const common::tokdoc::Node& srcNode, uint32_t flags);
 // ADD NEW PARAMETER TYPES HERE.
 
 bool LoadParamFromTokDoc(void* dstParam, const ParamDesc& paramDesc, const common::tokdoc::Node& srcNode, uint32_t flags);
 
-bool LoadObjFromTokDoc(void* dstObj, const ClassDesc& classDesc, const common::tokdoc::Node& srcNode, uint32_t flags);
+bool LoadObjFromTokDoc(void* dstObj, const StructDesc& structDesc, const common::tokdoc::Node& srcNode, uint32_t flags);
 
 } // namespace RegScript2

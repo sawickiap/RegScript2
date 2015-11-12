@@ -14,7 +14,7 @@
 namespace RegScript2
 {
 
-class ClassDesc;
+class StructDesc;
 
 class BoolParam
 {
@@ -52,17 +52,17 @@ public:
 	GameTimeParam(const common::GameTime& initialValue) : Value(initialValue) { }
 };
 
-template<typename Class_t>
-class ClassParam
+template<typename Struct_t>
+class StructParam
 {
 public:
-	typedef Class_t Class_t;
+	typedef Struct_t Struct_t;
 
 	// This member must be first because we cast this object directly to value.
-	Class_t Value;
+	Struct_t Value;
 
-	ClassParam() { }
-	ClassParam(const Class_t &initialValue) : Value(initialValue) { }
+	StructParam() { }
+	StructParam(const Struct_t &initialValue) : Value(initialValue) { }
 };
 
 template<typename Element_t, size_t Count>
@@ -92,21 +92,21 @@ public:
 	virtual void Copy(void* dstParam, const void* srcParam) const = 0;
 };
 
-class ClassParamDesc : public ParamDesc
+class StructParamDesc : public ParamDesc
 {
 public:
-	ClassParamDesc(const ClassDesc* classDesc) : m_ClassDesc(classDesc)
+	StructParamDesc(const StructDesc* structDesc) : m_StructDesc(structDesc)
 	{
-		assert(classDesc != nullptr);
+		assert(structDesc != nullptr);
 	}
-	const ClassDesc* GetClassDesc() const { return m_ClassDesc; }
+	const StructDesc* GetStructDesc() const { return m_StructDesc; }
 
 	inline virtual size_t GetParamSize() const;
 	inline virtual void SetToDefault(void* param) const;
 	inline virtual void Copy(void* dstParam, const void* srcParam) const;
 
 private:
-	const ClassDesc* m_ClassDesc;
+	const StructDesc* m_StructDesc;
 };
 
 class FixedSizeArrayParamDesc : public ParamDesc
@@ -215,17 +215,17 @@ public:
 	}
 };
 
-class ClassDesc
+class StructDesc
 {
 public:
 	std::vector<std::wstring> Names;
 	std::vector<size_t> Offsets;
 	std::vector<std::shared_ptr<ParamDesc>> Params;
 
-	ClassDesc(const wchar_t* name, size_t classSize, const ClassDesc* baseClassDesc = nullptr) : m_Name(name), m_ClassSize(classSize), m_BaseClassDesc(baseClassDesc) { }
+	StructDesc(const wchar_t* name, size_t structSize, const StructDesc* baseStructDesc = nullptr) : m_Name(name), m_StructSize(structSize), m_BaseStructDesc(baseStructDesc) { }
 	const wchar_t* GetName() const { return m_Name.c_str(); }
-	size_t GetClassSize() const { return m_ClassSize; }
-	const ClassDesc* GetBaseClassDesc() const { return m_BaseClassDesc; }
+	size_t GetStructSize() const { return m_StructSize; }
+	const StructDesc* GetBaseStructDesc() const { return m_BaseStructDesc; }
 
 	template<typename ParamDesc_t>
 	void AddParam(const wchar_t* name, size_t offset, const ParamDesc_t& param)
@@ -251,23 +251,23 @@ public:
 
 private:
 	std::wstring m_Name;
-	size_t m_ClassSize;
-	const ClassDesc* m_BaseClassDesc;
+	size_t m_StructSize;
+	const StructDesc* m_BaseStructDesc;
 };
 
-inline size_t ClassParamDesc::GetParamSize() const
+inline size_t StructParamDesc::GetParamSize() const
 {
-	return m_ClassDesc->GetClassSize();
+	return m_StructDesc->GetStructSize();
 }
 
-inline void ClassParamDesc::SetToDefault(void* param) const
+inline void StructParamDesc::SetToDefault(void* param) const
 {
-	m_ClassDesc->SetObjToDefault(param);
+	m_StructDesc->SetObjToDefault(param);
 }
 
-inline void ClassParamDesc::Copy(void* dstParam, const void* srcParam) const
+inline void StructParamDesc::Copy(void* dstParam, const void* srcParam) const
 {
-	m_ClassDesc->CopyObj(dstParam, srcParam);
+	m_StructDesc->CopyObj(dstParam, srcParam);
 }
 
 inline size_t FixedSizeArrayParamDesc::GetParamSize() const

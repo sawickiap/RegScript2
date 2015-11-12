@@ -69,9 +69,9 @@ bool LoadParamFromTokDoc(void* dstParam, const GameTimeParamDesc& paramDesc, con
 	}
 }
 
-bool LoadParamFromTokDoc(void* dstParam, const ClassParamDesc& paramDesc, const common::tokdoc::Node& srcNode, uint32_t flags)
+bool LoadParamFromTokDoc(void* dstParam, const StructParamDesc& paramDesc, const common::tokdoc::Node& srcNode, uint32_t flags)
 {
-	return LoadObjFromTokDoc(dstParam, *paramDesc.GetClassDesc(), srcNode, flags);
+	return LoadObjFromTokDoc(dstParam, *paramDesc.GetStructDesc(), srcNode, flags);
 }
 
 bool LoadParamFromTokDoc(void* dstParam, const FixedSizeArrayParamDesc& paramDesc, const common::tokdoc::Node& srcNode, uint32_t flags)
@@ -127,8 +127,8 @@ bool LoadParamFromTokDoc(void* dstParam, const ParamDesc& paramDesc, const commo
 		return LoadParamFromTokDoc(dstParam, (const FloatParamDesc&)paramDesc, srcNode, flags);
 	if(dynamic_cast<const GameTimeParamDesc*>(&paramDesc))
 		return LoadParamFromTokDoc(dstParam, (const GameTimeParamDesc&)paramDesc, srcNode, flags);
-	if(dynamic_cast<const ClassParamDesc*>(&paramDesc))
-		return LoadParamFromTokDoc(dstParam, (const ClassParamDesc&)paramDesc, srcNode, flags);
+	if(dynamic_cast<const StructParamDesc*>(&paramDesc))
+		return LoadParamFromTokDoc(dstParam, (const StructParamDesc&)paramDesc, srcNode, flags);
 	if(dynamic_cast<const FixedSizeArrayParamDesc*>(&paramDesc))
 		return LoadParamFromTokDoc(dstParam, (const FixedSizeArrayParamDesc&)paramDesc, srcNode, flags);
 	// ADD NEW PARAMETER TYPES HERE.
@@ -137,23 +137,23 @@ bool LoadParamFromTokDoc(void* dstParam, const ParamDesc& paramDesc, const commo
 	return false;
 }
 
-bool LoadObjFromTokDoc(void* dstObj, const ClassDesc& classDesc, const common::tokdoc::Node& srcNode, uint32_t flags)
+bool LoadObjFromTokDoc(void* dstObj, const StructDesc& structDesc, const common::tokdoc::Node& srcNode, uint32_t flags)
 {
-	const ClassDesc* baseClassDesc = classDesc.GetBaseClassDesc();
+	const StructDesc* baseStructDesc = structDesc.GetBaseStructDesc();
 	bool allOk = true;
-	if(baseClassDesc)
-		allOk = LoadObjFromTokDoc(dstObj, *baseClassDesc, srcNode, flags);
+	if(baseStructDesc)
+		allOk = LoadObjFromTokDoc(dstObj, *baseStructDesc, srcNode, flags);
 
-	for(size_t i = 0, count = classDesc.Params.size(); i < count; ++i)
+	for(size_t i = 0, count = structDesc.Params.size(); i < count; ++i)
 	{
 		ERR_TRY;
 
-		common::tokdoc::Node* subNode = srcNode.FindFirstChild(classDesc.Names[i]);
+		common::tokdoc::Node* subNode = srcNode.FindFirstChild(structDesc.Names[i]);
 		if(subNode)
 		{
 			if(!LoadParamFromTokDoc(
-				classDesc.AccessRawParam(dstObj, i),
-				*classDesc.Params[i],
+				structDesc.AccessRawParam(dstObj, i),
+				*structDesc.Params[i],
 				*subNode,
 				flags))
 			{
@@ -165,14 +165,14 @@ bool LoadObjFromTokDoc(void* dstObj, const ClassDesc& classDesc, const common::t
 			if(IsFlagOptional(flags))
 			{
 				if((flags & TOKDOC_FLAG_DEFAULT))
-					classDesc.SetParamToDefault(dstObj, i);
+					structDesc.SetParamToDefault(dstObj, i);
 				allOk = false;
 			}
 			else
 				throw common::Error(L"Parameter not found.", __TFILE__, __LINE__);
 		}
 
-		ERR_CATCH(L"RegScript2 TokDoc parameter: " + classDesc.Names[i]);
+		ERR_CATCH(L"RegScript2 TokDoc parameter: " + structDesc.Names[i]);
 	}
 	return allOk;
 }
