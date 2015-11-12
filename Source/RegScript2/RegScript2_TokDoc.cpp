@@ -4,6 +4,122 @@
 namespace RegScript2
 {
 
+void SaveParamToTokDoc(common::tokdoc::Node& dstNode, const void* srcParam, const BoolParamDesc& paramDesc)
+{
+	const BoolParam* boolParam = (const BoolParam*)srcParam;
+	common::tokdoc::NodeFrom(dstNode, boolParam->Value);
+}
+
+void SaveParamToTokDoc(common::tokdoc::Node& dstNode, const void* srcParam, const UintParamDesc& paramDesc)
+{
+	const UintParam* uintParam = (const UintParam*)srcParam;
+	common::tokdoc::NodeFrom(dstNode, uintParam->Value);
+}
+
+void SaveParamToTokDoc(common::tokdoc::Node& dstNode, const void* srcParam, const FloatParamDesc& paramDesc)
+{
+	const FloatParam* floatParam = (const FloatParam*)srcParam;
+	common::tokdoc::NodeFrom(dstNode, floatParam->Value);
+}
+
+void SaveParamToTokDoc(common::tokdoc::Node& dstNode, const void* srcParam, const StringParamDesc& paramDesc)
+{
+	const StringParam* stringParam = (const StringParam*)srcParam;
+	common::tokdoc::NodeFrom(dstNode, stringParam->Value);
+}
+
+void SaveParamToTokDoc(common::tokdoc::Node& dstNode, const void* srcParam, const GameTimeParamDesc& paramDesc)
+{
+	const GameTimeParam* gameTimeParam = (const GameTimeParam*)srcParam;
+	common::tokdoc::NodeFrom(dstNode, gameTimeParam->Value.ToSeconds_d());
+}
+
+void SaveParamToTokDoc(common::tokdoc::Node& dstNode, const void* srcParam, const Vec2ParamDesc& paramDesc)
+{
+	const Vec2Param* vecParam = (const Vec2Param*)srcParam;
+	common::tokdoc::NodeFrom(dstNode, vecParam->Value);
+}
+
+void SaveParamToTokDoc(common::tokdoc::Node& dstNode, const void* srcParam, const Vec3ParamDesc& paramDesc)
+{
+	const Vec3Param* vecParam = (const Vec3Param*)srcParam;
+	common::tokdoc::NodeFrom(dstNode, vecParam->Value);
+}
+
+void SaveParamToTokDoc(common::tokdoc::Node& dstNode, const void* srcParam, const Vec4ParamDesc& paramDesc)
+{
+	const Vec4Param* vecParam = (const Vec4Param*)srcParam;
+	common::tokdoc::NodeFrom(dstNode, vecParam->Value);
+}
+
+void SaveParamToTokDoc(common::tokdoc::Node& dstNode, const void* srcParam, const StructParamDesc& paramDesc)
+{
+	SaveObjToTokDoc(dstNode, srcParam, *paramDesc.GetStructDesc());
+}
+
+void SaveParamToTokDoc(common::tokdoc::Node& dstNode, const void* srcParam, const FixedSizeArrayParamDesc& paramDesc)
+{
+	size_t index = 0;
+	const char* srcElement = (const char*)srcParam;
+	const size_t elementCount = paramDesc.GetCount();
+	const ParamDesc* elementParamDesc = paramDesc.GetElementParamDesc();
+	const size_t elementSize = elementParamDesc->GetParamSize();
+	for(size_t i = 0; i < elementCount; ++i)
+	{
+		common::tokdoc::Node* elementNode = new common::tokdoc::Node();
+		dstNode.LinkChildAtEnd(elementNode);
+		SaveParamToTokDoc(*elementNode, srcElement, *elementParamDesc);
+		srcElement += elementSize;
+	}
+}
+
+// ADD NEW PARAMETER TYPES HERE.
+
+void SaveParamToTokDoc(common::tokdoc::Node& dstNode, const void* srcParam, const ParamDesc& paramDesc)
+{
+	if(dynamic_cast<const BoolParamDesc*>(&paramDesc))
+		return SaveParamToTokDoc(dstNode, srcParam, (const BoolParamDesc&)paramDesc);
+	if(dynamic_cast<const UintParamDesc*>(&paramDesc))
+		return SaveParamToTokDoc(dstNode, srcParam, (const UintParamDesc&)paramDesc);
+	if(dynamic_cast<const FloatParamDesc*>(&paramDesc))
+		return SaveParamToTokDoc(dstNode, srcParam, (const FloatParamDesc&)paramDesc);
+	if(dynamic_cast<const StringParamDesc*>(&paramDesc))
+		return SaveParamToTokDoc(dstNode, srcParam, (const StringParamDesc&)paramDesc);
+	if(dynamic_cast<const GameTimeParamDesc*>(&paramDesc))
+		return SaveParamToTokDoc(dstNode, srcParam, (const GameTimeParamDesc&)paramDesc);
+	if(dynamic_cast<const Vec2ParamDesc*>(&paramDesc))
+		return SaveParamToTokDoc(dstNode, srcParam, (const Vec2ParamDesc&)paramDesc);
+	if(dynamic_cast<const Vec3ParamDesc*>(&paramDesc))
+		return SaveParamToTokDoc(dstNode, srcParam, (const Vec3ParamDesc&)paramDesc);
+	if(dynamic_cast<const Vec4ParamDesc*>(&paramDesc))
+		return SaveParamToTokDoc(dstNode, srcParam, (const Vec4ParamDesc&)paramDesc);
+	if(dynamic_cast<const StructParamDesc*>(&paramDesc))
+		return SaveParamToTokDoc(dstNode, srcParam, (const StructParamDesc&)paramDesc);
+	if(dynamic_cast<const FixedSizeArrayParamDesc*>(&paramDesc))
+		return SaveParamToTokDoc(dstNode, srcParam, (const FixedSizeArrayParamDesc&)paramDesc);
+	// ADD NEW PARAMETER TYPES HERE.
+
+	assert(!"Unsupported parameter type.");
+}
+
+void SaveObjToTokDoc(common::tokdoc::Node& dstNode, const void* srcObj, const StructDesc& structDesc)
+{
+	const StructDesc* baseStructDesc = structDesc.GetBaseStructDesc();
+	if(baseStructDesc)
+		SaveObjToTokDoc(dstNode, srcObj, *baseStructDesc);
+
+	for(size_t i = 0, count = structDesc.Params.size(); i < count; ++i)
+	{
+		common::tokdoc::Node* subNode = new common::tokdoc::Node();
+		dstNode.LinkChildAtEnd(subNode);
+		subNode->Name = structDesc.Names[i];
+		SaveParamToTokDoc(
+			*subNode,
+			structDesc.AccessRawParam(srcObj, i),
+			*structDesc.Params[i]);
+	}
+}
+
 static inline bool IsFlagOptional(uint32_t flags)
 {
 	return (flags & (TOKDOC_FLAG_OPTIONAL | TOKDOC_FLAG_OPTIONAL_CORRECT)) != 0;
@@ -75,7 +191,7 @@ bool LoadParamFromTokDoc(void* dstParam, const StringParamDesc& paramDesc, const
 
 bool LoadParamFromTokDoc(void* dstParam, const GameTimeParamDesc& paramDesc, const common::tokdoc::Node& srcNode, const STokDocLoadConfig& config)
 {
-	float seconds = 0.f;
+	double seconds = 0.;
 	if(common::tokdoc::NodeTo(seconds, srcNode, IsFlagRequired(config.Flags)))
 	{
 		GameTimeParam* gameTimeParam = (GameTimeParam*)dstParam;
