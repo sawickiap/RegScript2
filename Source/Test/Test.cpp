@@ -45,7 +45,7 @@ private:
 void CPrinter::printf(const wchar_t* format, ...)
 {
 	va_list argList;
-	va_start( argList, format );
+	va_start(argList, format);
 
 	size_t dstLen = (size_t)_vscwprintf(format, argList);
 	if(dstLen)
@@ -57,7 +57,7 @@ void CPrinter::printf(const wchar_t* format, ...)
 	}
 	m_Text += L"\n";
 
-	va_end( argList );
+	va_end(argList);
 }
 
 bool CPrinter::TextContains(const wchar_t* str) const
