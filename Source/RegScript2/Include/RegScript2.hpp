@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Common/Base.hpp>
+#include <Common/Math.hpp>
 #include <Common/DateTime.hpp>
 #include <Common/Error.hpp>
 
@@ -67,6 +68,33 @@ public:
 
 	GameTimeParam() { }
 	GameTimeParam(const common::GameTime& initialValue) : Value(initialValue) { }
+};
+
+class Vec2Param
+{
+public:
+	common::VEC2 Value;
+
+	Vec2Param() { }
+	Vec2Param(const common::VEC2& initialValue) : Value(initialValue) { }
+};
+
+class Vec3Param
+{
+public:
+	common::VEC3 Value;
+
+	Vec3Param() { }
+	Vec3Param(const common::VEC3& initialValue) : Value(initialValue) { }
+};
+
+class Vec4Param
+{
+public:
+	common::VEC4 Value;
+
+	Vec4Param() { }
+	Vec4Param(const common::VEC4& initialValue) : Value(initialValue) { }
 };
 
 template<typename Struct_t>
@@ -238,6 +266,60 @@ public:
 	typedef GameTimeParam Param_t;
 
 	GameTimeParamDesc& SetDefault(const common::GameTime& defaultValue) { DefaultValue = defaultValue; return *this; }
+
+	virtual size_t GetParamSize() const { return sizeof(Param_t); }
+	virtual void SetToDefault(void* param) const
+	{
+		((Param_t*)param)->Value = DefaultValue;
+	}
+	virtual void Copy(void* dstParam, const void* srcParam) const
+	{
+		((Param_t*)dstParam)->Value = ((Param_t*)srcParam)->Value;
+	}
+};
+
+class Vec2ParamDesc : public TypedParamDesc<common::VEC2>
+{
+public:
+	typedef Vec2Param Param_t;
+
+	Vec2ParamDesc& SetDefault(const common::VEC2& defaultValue) { DefaultValue = defaultValue; return *this; }
+
+	virtual size_t GetParamSize() const { return sizeof(Param_t); }
+	virtual void SetToDefault(void* param) const
+	{
+		((Param_t*)param)->Value = DefaultValue;
+	}
+	virtual void Copy(void* dstParam, const void* srcParam) const
+	{
+		((Param_t*)dstParam)->Value = ((Param_t*)srcParam)->Value;
+	}
+};
+
+class Vec3ParamDesc : public TypedParamDesc<common::VEC3>
+{
+public:
+	typedef Vec3Param Param_t;
+
+	Vec3ParamDesc& SetDefault(const common::VEC3& defaultValue) { DefaultValue = defaultValue; return *this; }
+
+	virtual size_t GetParamSize() const { return sizeof(Param_t); }
+	virtual void SetToDefault(void* param) const
+	{
+		((Param_t*)param)->Value = DefaultValue;
+	}
+	virtual void Copy(void* dstParam, const void* srcParam) const
+	{
+		((Param_t*)dstParam)->Value = ((Param_t*)srcParam)->Value;
+	}
+};
+
+class Vec4ParamDesc : public TypedParamDesc<common::VEC4>
+{
+public:
+	typedef Vec4Param Param_t;
+
+	Vec4ParamDesc& SetDefault(const common::VEC4& defaultValue) { DefaultValue = defaultValue; return *this; }
 
 	virtual size_t GetParamSize() const { return sizeof(Param_t); }
 	virtual void SetToDefault(void* param) const

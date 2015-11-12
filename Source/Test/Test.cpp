@@ -522,6 +522,189 @@ TEST_F(Fixture1, ContainerTokDocLoadOptionalIncorrectDefault)
 	EXPECT_EQ(124, obj.FixedSizeArrayParam.Values[2].Value);
 }
 
+class MathStruct
+{
+public:
+	rs2::Vec2Param Vec2Param;
+	rs2::Vec3Param Vec3Param;
+	rs2::Vec4Param Vec4Param;
+
+	static std::unique_ptr<rs2::StructDesc> CreateStructDesc();
+};
+
+std::unique_ptr<rs2::StructDesc> MathStruct::CreateStructDesc()
+{
+	std::unique_ptr<rs2::StructDesc> structDesc =
+		std::make_unique<rs2::StructDesc>(L"MathStruct", sizeof(MathStruct));
+
+	structDesc->AddParam(
+		L"Vec2Param",
+		offsetof(MathStruct, Vec2Param),
+		rs2::Vec2ParamDesc().SetDefault(common::VEC2(1.f, 2.f)));
+	structDesc->AddParam(
+		L"Vec3Param",
+		offsetof(MathStruct, Vec3Param),
+		rs2::Vec3ParamDesc().SetDefault(common::VEC3(1.f, 2.f, 3.f)));
+	structDesc->AddParam(
+		L"Vec4Param",
+		offsetof(MathStruct, Vec4Param),
+		rs2::Vec4ParamDesc().SetDefault(common::VEC4(1.f, 2.f, 3.f, 4.f)));
+
+	return structDesc;
+}
+
+TEST(Math, SetObjToDefault)
+{
+	std::unique_ptr<rs2::StructDesc> structDesc = MathStruct::CreateStructDesc();
+	MathStruct obj;
+	structDesc->SetObjToDefault(&obj);
+	EXPECT_EQ(common::VEC2(1.f, 2.f), obj.Vec2Param.Value);
+	EXPECT_EQ(common::VEC3(1.f, 2.f, 3.f), obj.Vec3Param.Value);
+	EXPECT_EQ(common::VEC4(1.f, 2.f, 3.f, 4.f), obj.Vec4Param.Value);
+}
+
+TEST(Math, CopyObj)
+{
+	std::unique_ptr<rs2::StructDesc> structDesc = MathStruct::CreateStructDesc();
+	MathStruct obj1, obj2;
+	obj1.Vec2Param.Value = common::VEC2(11.f, 22.f);
+	obj1.Vec3Param.Value = common::VEC3(11.f, 22.f, 33.f);
+	obj1.Vec4Param.Value = common::VEC4(11.f, 22.f, 33.f, 44.f);
+	structDesc->CopyObj(&obj2, &obj1);
+	EXPECT_EQ(common::VEC2(11.f, 22.f), obj2.Vec2Param.Value);
+	EXPECT_EQ(common::VEC3(11.f, 22.f, 33.f), obj2.Vec3Param.Value);
+	EXPECT_EQ(common::VEC4(11.f, 22.f, 33.f, 44.f), obj2.Vec4Param.Value);
+}
+
+TEST(Math, TokDocLoad)
+{
+	const wchar_t* const DOC =
+		L"Vec2Param={11, 12};"
+		L"Vec3Param={11.0, 12.0, 13.0};"
+		L"Vec4Param={11., 12., 13., 14.};";
+
+	common::tokdoc::Node rootNode;
+	{
+		common::Tokenizer tokenizer(DOC, wcslen(DOC), common::Tokenizer::FLAG_MULTILINE_STRINGS);
+		tokenizer.Next();
+		rootNode.LoadChildren(tokenizer);
+	}
+
+	std::unique_ptr<rs2::StructDesc> structDesc = MathStruct::CreateStructDesc();
+	MathStruct obj;
+	bool ok = rs2::LoadObjFromTokDoc(
+		&obj,
+		*structDesc,
+		rootNode,
+		rs2::STokDocLoadConfig(rs2::TOKDOC_FLAG_REQUIRED));
+	EXPECT_TRUE(ok);
+
+	EXPECT_EQ(common::VEC2(11.f, 12.f), obj.Vec2Param.Value);
+	EXPECT_EQ(common::VEC3(11.f, 12.f, 13.f), obj.Vec3Param.Value);
+	EXPECT_EQ(common::VEC4(11.f, 12.f, 13.f, 14.f), obj.Vec4Param.Value);
+}
+
+TEST(Math, TokDocLoadAlternative)
+{
+	const wchar_t* const DOC =
+		L"Vec2Param={ \"11\",\"12\"  };"
+		L"Vec3Param={\n11.0,\n12.0,\n\n 13.0\n\t};"
+		L"Vec4Param={ \"11.\", \"12.\", \"13.\", \"14.\" };";
+
+	common::tokdoc::Node rootNode;
+	{
+		common::Tokenizer tokenizer(DOC, wcslen(DOC), common::Tokenizer::FLAG_MULTILINE_STRINGS);
+		tokenizer.Next();
+		rootNode.LoadChildren(tokenizer);
+	}
+
+	std::unique_ptr<rs2::StructDesc> structDesc = MathStruct::CreateStructDesc();
+	MathStruct obj;
+	bool ok = rs2::LoadObjFromTokDoc(
+		&obj,
+		*structDesc,
+		rootNode,
+		rs2::STokDocLoadConfig(rs2::TOKDOC_FLAG_REQUIRED));
+	EXPECT_TRUE(ok);
+
+	EXPECT_EQ(common::VEC2(11.f, 12.f), obj.Vec2Param.Value);
+	EXPECT_EQ(common::VEC3(11.f, 12.f, 13.f), obj.Vec3Param.Value);
+	EXPECT_EQ(common::VEC4(11.f, 12.f, 13.f, 14.f), obj.Vec4Param.Value);
+}
+
+TEST(Math, TokDocLoadRequiredButNotFound)
+{
+	const wchar_t* const DOC = L"";
+
+	common::tokdoc::Node rootNode;
+	{
+		common::Tokenizer tokenizer(DOC, wcslen(DOC), common::Tokenizer::FLAG_MULTILINE_STRINGS);
+		tokenizer.Next();
+		rootNode.LoadChildren(tokenizer);
+	}
+
+	std::unique_ptr<rs2::StructDesc> structDesc = MathStruct::CreateStructDesc();
+	MathStruct obj;
+	EXPECT_THROW(
+		rs2::LoadObjFromTokDoc(
+			&obj,
+			*structDesc,
+			rootNode,
+			rs2::STokDocLoadConfig(rs2::TOKDOC_FLAG_REQUIRED)),
+		common::Error);
+}
+
+// Unfortunately common::tokdoc::NodeTo returns true even if parsing "Foo" as VEC2.
+TEST(Math, DISABLED_TokDocLoadOptionalCorrectButNotCorrect)
+{
+	const wchar_t* const DOC =
+		L"Vec2Param=\"Foo\";"
+		L"Vec3Param={11.0, 12.0, 13.0};"
+		L"Vec4Param={11., 12., 13., 14.};";
+
+	common::tokdoc::Node rootNode;
+	{
+		common::Tokenizer tokenizer(DOC, wcslen(DOC), common::Tokenizer::FLAG_MULTILINE_STRINGS);
+		tokenizer.Next();
+		rootNode.LoadChildren(tokenizer);
+	}
+
+	std::unique_ptr<rs2::StructDesc> structDesc = MathStruct::CreateStructDesc();
+	MathStruct obj;
+	EXPECT_THROW(
+		rs2::LoadObjFromTokDoc(
+			&obj,
+			*structDesc,
+			rootNode,
+			rs2::STokDocLoadConfig(rs2::TOKDOC_FLAG_OPTIONAL_CORRECT)),
+		common::Error);
+}
+
+TEST(Math, TokDocLoadOptionalAndNotFound)
+{
+	const wchar_t* const DOC = L"";
+
+	common::tokdoc::Node rootNode;
+	{
+		common::Tokenizer tokenizer(DOC, wcslen(DOC), common::Tokenizer::FLAG_MULTILINE_STRINGS);
+		tokenizer.Next();
+		rootNode.LoadChildren(tokenizer);
+	}
+
+	std::unique_ptr<rs2::StructDesc> structDesc = MathStruct::CreateStructDesc();
+	MathStruct obj;
+	CPrinter printer;
+	bool ok = rs2::LoadObjFromTokDoc(
+		&obj,
+		*structDesc,
+		rootNode,
+		rs2::STokDocLoadConfig(rs2::TOKDOC_FLAG_OPTIONAL_CORRECT, &printer));
+	EXPECT_FALSE(ok);
+	EXPECT_TRUE(printer.TextContains(L"Vec2Param"));
+	EXPECT_TRUE(printer.TextContains(L"Vec3Param"));
+	EXPECT_TRUE(printer.TextContains(L"Vec4Param"));
+}
+
 int wmain(int argc, wchar_t** argv)
 {
 	::testing::AddGlobalTestEnvironment(new Environment());

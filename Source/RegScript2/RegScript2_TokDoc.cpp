@@ -92,6 +92,51 @@ bool LoadParamFromTokDoc(void* dstParam, const GameTimeParamDesc& paramDesc, con
 	}
 }
 
+bool LoadParamFromTokDoc(void* dstParam, const Vec2ParamDesc& paramDesc, const common::tokdoc::Node& srcNode, const STokDocLoadConfig& config)
+{
+	Vec2Param* vecParam = (Vec2Param*)dstParam;
+	if(common::tokdoc::NodeTo(vecParam->Value, srcNode, IsFlagRequired(config.Flags)))
+		return true;
+	else
+	{
+		if((config.Flags & TOKDOC_FLAG_DEFAULT))
+			paramDesc.SetToDefault(dstParam);
+		if(config.WarningPrinter)
+			config.WarningPrinter->printf(L"Invalid vec2 value.");
+		return false;
+	}
+}
+
+bool LoadParamFromTokDoc(void* dstParam, const Vec3ParamDesc& paramDesc, const common::tokdoc::Node& srcNode, const STokDocLoadConfig& config)
+{
+	Vec3Param* vecParam = (Vec3Param*)dstParam;
+	if(common::tokdoc::NodeTo(vecParam->Value, srcNode, IsFlagRequired(config.Flags)))
+		return true;
+	else
+	{
+		if((config.Flags & TOKDOC_FLAG_DEFAULT))
+			paramDesc.SetToDefault(dstParam);
+		if(config.WarningPrinter)
+			config.WarningPrinter->printf(L"Invalid vec2 value.");
+		return false;
+	}
+}
+
+bool LoadParamFromTokDoc(void* dstParam, const Vec4ParamDesc& paramDesc, const common::tokdoc::Node& srcNode, const STokDocLoadConfig& config)
+{
+	Vec4Param* vecParam = (Vec4Param*)dstParam;
+	if(common::tokdoc::NodeTo(vecParam->Value, srcNode, IsFlagRequired(config.Flags)))
+		return true;
+	else
+	{
+		if((config.Flags & TOKDOC_FLAG_DEFAULT))
+			paramDesc.SetToDefault(dstParam);
+		if(config.WarningPrinter)
+			config.WarningPrinter->printf(L"Invalid vec2 value.");
+		return false;
+	}
+}
+
 bool LoadParamFromTokDoc(void* dstParam, const StructParamDesc& paramDesc, const common::tokdoc::Node& srcNode, const STokDocLoadConfig& config)
 {
 	return LoadObjFromTokDoc(dstParam, *paramDesc.GetStructDesc(), srcNode, config);
@@ -154,6 +199,12 @@ bool LoadParamFromTokDoc(void* dstParam, const ParamDesc& paramDesc, const commo
 		return LoadParamFromTokDoc(dstParam, (const StringParamDesc&)paramDesc, srcNode, config);
 	if(dynamic_cast<const GameTimeParamDesc*>(&paramDesc))
 		return LoadParamFromTokDoc(dstParam, (const GameTimeParamDesc&)paramDesc, srcNode, config);
+	if(dynamic_cast<const Vec2ParamDesc*>(&paramDesc))
+		return LoadParamFromTokDoc(dstParam, (const Vec2ParamDesc&)paramDesc, srcNode, config);
+	if(dynamic_cast<const Vec3ParamDesc*>(&paramDesc))
+		return LoadParamFromTokDoc(dstParam, (const Vec3ParamDesc&)paramDesc, srcNode, config);
+	if(dynamic_cast<const Vec4ParamDesc*>(&paramDesc))
+		return LoadParamFromTokDoc(dstParam, (const Vec4ParamDesc&)paramDesc, srcNode, config);
 	if(dynamic_cast<const StructParamDesc*>(&paramDesc))
 		return LoadParamFromTokDoc(dstParam, (const StructParamDesc&)paramDesc, srcNode, config);
 	if(dynamic_cast<const FixedSizeArrayParamDesc*>(&paramDesc))
