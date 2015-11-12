@@ -50,6 +50,16 @@ public:
 	FloatParam(float initialValue) : Value(initialValue) { }
 };
 
+class StringParam
+{
+public:
+	std::wstring Value;
+
+	StringParam() { }
+	StringParam(const wchar_t* initialValue) : Value(initialValue) { }
+	StringParam(const std::wstring& initialValue) : Value(initialValue) { }
+};
+
 class GameTimeParam
 {
 public:
@@ -192,6 +202,24 @@ public:
 	typedef FloatParam Param_t;
 
 	FloatParamDesc& SetDefault(float defaultValue) { DefaultValue = defaultValue; return *this; }
+
+	virtual size_t GetParamSize() const { return sizeof(Param_t); }
+	virtual void SetToDefault(void* param) const
+	{
+		((Param_t*)param)->Value = DefaultValue;
+	}
+	virtual void Copy(void* dstParam, const void* srcParam) const
+	{
+		((Param_t*)dstParam)->Value = ((Param_t*)srcParam)->Value;
+	}
+};
+
+class StringParamDesc : public TypedParamDesc<std::wstring>
+{
+public:
+	typedef StringParam Param_t;
+
+	StringParamDesc& SetDefault(const wchar_t* defaultValue) { DefaultValue = defaultValue; return *this; }
 
 	virtual size_t GetParamSize() const { return sizeof(Param_t); }
 	virtual void SetToDefault(void* param) const

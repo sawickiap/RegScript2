@@ -58,6 +58,21 @@ bool LoadParamFromTokDoc(void* dstParam, const FloatParamDesc& paramDesc, const 
 	}
 }
 
+bool LoadParamFromTokDoc(void* dstParam, const StringParamDesc& paramDesc, const common::tokdoc::Node& srcNode, const STokDocLoadConfig& config)
+{
+	StringParam* stringParam = (StringParam*)dstParam;
+	if(common::tokdoc::NodeTo(stringParam->Value, srcNode, IsFlagRequired(config.Flags)))
+		return true;
+	else
+	{
+		if((config.Flags & TOKDOC_FLAG_DEFAULT))
+			paramDesc.SetToDefault(dstParam);
+		if(config.WarningPrinter)
+			config.WarningPrinter->printf(L"Invalid string value.");
+		return false;
+	}
+}
+
 bool LoadParamFromTokDoc(void* dstParam, const GameTimeParamDesc& paramDesc, const common::tokdoc::Node& srcNode, const STokDocLoadConfig& config)
 {
 	float seconds = 0.f;
@@ -135,6 +150,8 @@ bool LoadParamFromTokDoc(void* dstParam, const ParamDesc& paramDesc, const commo
 		return LoadParamFromTokDoc(dstParam, (const UintParamDesc&)paramDesc, srcNode, config);
 	if(dynamic_cast<const FloatParamDesc*>(&paramDesc))
 		return LoadParamFromTokDoc(dstParam, (const FloatParamDesc&)paramDesc, srcNode, config);
+	if(dynamic_cast<const StringParamDesc*>(&paramDesc))
+		return LoadParamFromTokDoc(dstParam, (const StringParamDesc&)paramDesc, srcNode, config);
 	if(dynamic_cast<const GameTimeParamDesc*>(&paramDesc))
 		return LoadParamFromTokDoc(dstParam, (const GameTimeParamDesc&)paramDesc, srcNode, config);
 	if(dynamic_cast<const StructParamDesc*>(&paramDesc))
