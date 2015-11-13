@@ -81,7 +81,7 @@ public:
 	rs2::GameTimeParam GameTimeParam;
 
 	void CheckDefaultValues() const;
-	void FillCustomValues();
+	void SetCustomValues();
 	void CheckCustomValues() const;
 
 	static unique_ptr<rs2::StructDesc> CreateStructDesc();
@@ -96,7 +96,7 @@ void SimpleStruct::CheckDefaultValues() const
 	EXPECT_EQ(common::MillisecondsToGameTime(1023), GameTimeParam.Value);
 }
 
-void SimpleStruct::FillCustomValues()
+void SimpleStruct::SetCustomValues()
 {
 	BoolParam.Value = false;
 	UintParam.Value = 124;
@@ -148,8 +148,30 @@ class DerivedStruct : public SimpleStruct
 public:
 	rs2::UintParam DerivedUintParam;
 
+	void CheckDefaultValues() const;
+	void SetCustomValues();
+	void CheckCustomValues() const;
+
 	static unique_ptr<rs2::StructDesc> CreateStructDesc(const rs2::StructDesc* baseStructDesc);
 };
+
+void DerivedStruct::CheckDefaultValues() const
+{
+	SimpleStruct::CheckDefaultValues();
+	EXPECT_EQ(555, DerivedUintParam.Value);
+}
+
+void DerivedStruct::SetCustomValues()
+{
+	SimpleStruct::SetCustomValues();
+	DerivedUintParam.Value = 0xFFFFC0AD;
+}
+
+void DerivedStruct::CheckCustomValues() const
+{
+	SimpleStruct::CheckCustomValues();
+	EXPECT_EQ(0xFFFFC0AD, DerivedUintParam.Value);
+}
 
 unique_ptr<rs2::StructDesc> DerivedStruct::CreateStructDesc(const rs2::StructDesc* baseStructDesc)
 {
@@ -170,8 +192,36 @@ public:
 	rs2::StructParam<SimpleStruct> StructParam;
 	rs2::FixedSizeArrayParam<rs2::UintParam, 3> FixedSizeArrayParam;
 
+	void CheckDefaultValues() const;
+	void SetCustomValues();
+	void CheckCustomValues() const;
+
 	static unique_ptr<rs2::StructDesc> CreateStructDesc(const rs2::StructDesc* simpleStructDesc);
 };
+
+void ContainerStruct::CheckDefaultValues() const
+{
+	StructParam.Value.CheckDefaultValues();
+	EXPECT_EQ(124, FixedSizeArrayParam.Values[0].Value);
+	EXPECT_EQ(124, FixedSizeArrayParam.Values[1].Value);
+	EXPECT_EQ(124, FixedSizeArrayParam.Values[2].Value);
+}
+
+void ContainerStruct::SetCustomValues()
+{
+	StructParam.Value.SetCustomValues();
+	FixedSizeArrayParam.Values[0].Value = 0xDEAD;
+	FixedSizeArrayParam.Values[1].Value = 0xDEAE;
+	FixedSizeArrayParam.Values[2].Value = 0xDEAF;
+}
+
+void ContainerStruct::CheckCustomValues() const
+{
+	StructParam.Value.CheckCustomValues();
+	EXPECT_EQ(0xDEAD, FixedSizeArrayParam.Values[0].Value);
+	EXPECT_EQ(0xDEAE, FixedSizeArrayParam.Values[1].Value);
+	EXPECT_EQ(0xDEAF, FixedSizeArrayParam.Values[2].Value);
+}
 
 unique_ptr<rs2::StructDesc> ContainerStruct::CreateStructDesc(const rs2::StructDesc* simpleStructDesc)
 {
@@ -230,7 +280,6 @@ TEST_F(Fixture1, DerivedSetDefault)
 	DerivedStruct obj;
 	m_DerivedStructDesc->SetObjToDefault(&obj);
 	obj.CheckDefaultValues();
-	EXPECT_EQ(555, obj.DerivedUintParam.Value);
 }
 
 TEST_F(Fixture1, DerivedCopyObj)
@@ -239,17 +288,13 @@ TEST_F(Fixture1, DerivedCopyObj)
 	m_DerivedStructDesc->SetObjToDefault(&obj1);
 	m_DerivedStructDesc->CopyObj(&obj2, &obj1);
 	obj2.CheckDefaultValues();
-	EXPECT_EQ(555, obj2.DerivedUintParam.Value);
 }
 
 TEST_F(Fixture1, ContainerSetDefault)
 {
 	ContainerStruct obj;
 	m_ContainerStructDesc->SetObjToDefault(&obj);
-	obj.StructParam.Value.CheckDefaultValues();
-	EXPECT_EQ(124, obj.FixedSizeArrayParam.Values[0].Value);
-	EXPECT_EQ(124, obj.FixedSizeArrayParam.Values[1].Value);
-	EXPECT_EQ(124, obj.FixedSizeArrayParam.Values[2].Value);
+	obj.CheckDefaultValues();
 }
 
 TEST_F(Fixture1, ContainerCopyObj)
@@ -257,10 +302,7 @@ TEST_F(Fixture1, ContainerCopyObj)
 	ContainerStruct obj1, obj2;
 	m_ContainerStructDesc->SetObjToDefault(&obj1);
 	m_ContainerStructDesc->CopyObj(&obj2, &obj1);
-	obj2.StructParam.Value.CheckDefaultValues();
-	EXPECT_EQ(124, obj2.FixedSizeArrayParam.Values[0].Value);
-	EXPECT_EQ(124, obj2.FixedSizeArrayParam.Values[1].Value);
-	EXPECT_EQ(124, obj2.FixedSizeArrayParam.Values[2].Value);
+	obj2.CheckDefaultValues();
 }
 
 TEST_F(Fixture1, SimpleTokDocLoad)
@@ -536,8 +578,33 @@ public:
 	rs2::Vec3Param Vec3Param;
 	rs2::Vec4Param Vec4Param;
 
+	void CheckDefaultValues() const;
+	void SetCustomValues();
+	void CheckCustomValues() const;
+
 	static unique_ptr<rs2::StructDesc> CreateStructDesc();
 };
+
+void MathStruct::CheckDefaultValues() const
+{
+	EXPECT_EQ(VEC2(1.f, 2.f), Vec2Param.Value);
+	EXPECT_EQ(VEC3(1.f, 2.f, 3.f), Vec3Param.Value);
+	EXPECT_EQ(VEC4(1.f, 2.f, 3.f, 4.f), Vec4Param.Value);
+}
+
+void MathStruct::SetCustomValues()
+{
+	Vec2Param.Value = VEC2(11.f, 22.f);
+	Vec3Param.Value = VEC3(11.f, 22.f, 33.f);
+	Vec4Param.Value = VEC4(11.f, 22.f, 33.f, 44.f);
+}
+
+void MathStruct::CheckCustomValues() const
+{
+	EXPECT_EQ(VEC2(11.f, 22.f), Vec2Param.Value);
+	EXPECT_EQ(VEC3(11.f, 22.f, 33.f), Vec3Param.Value);
+	EXPECT_EQ(VEC4(11.f, 22.f, 33.f, 44.f), Vec4Param.Value);
+}
 
 unique_ptr<rs2::StructDesc> MathStruct::CreateStructDesc()
 {
@@ -565,22 +632,16 @@ TEST(Math, SetObjToDefault)
 	unique_ptr<rs2::StructDesc> structDesc = MathStruct::CreateStructDesc();
 	MathStruct obj;
 	structDesc->SetObjToDefault(&obj);
-	EXPECT_EQ(VEC2(1.f, 2.f), obj.Vec2Param.Value);
-	EXPECT_EQ(VEC3(1.f, 2.f, 3.f), obj.Vec3Param.Value);
-	EXPECT_EQ(VEC4(1.f, 2.f, 3.f, 4.f), obj.Vec4Param.Value);
+	obj.CheckDefaultValues();
 }
 
 TEST(Math, CopyObj)
 {
 	unique_ptr<rs2::StructDesc> structDesc = MathStruct::CreateStructDesc();
 	MathStruct obj1, obj2;
-	obj1.Vec2Param.Value = VEC2(11.f, 22.f);
-	obj1.Vec3Param.Value = VEC3(11.f, 22.f, 33.f);
-	obj1.Vec4Param.Value = VEC4(11.f, 22.f, 33.f, 44.f);
+	obj1.SetCustomValues();
 	structDesc->CopyObj(&obj2, &obj1);
-	EXPECT_EQ(VEC2(11.f, 22.f), obj2.Vec2Param.Value);
-	EXPECT_EQ(VEC3(11.f, 22.f, 33.f), obj2.Vec3Param.Value);
-	EXPECT_EQ(VEC4(11.f, 22.f, 33.f, 44.f), obj2.Vec4Param.Value);
+	obj2.CheckCustomValues();
 }
 
 TEST(Math, TokDocLoad)
@@ -718,11 +779,67 @@ TEST(TokDoc, SimpleStructTokDocSaveLoad)
 	common::tokdoc::Node rootNode;
 	{
 		SimpleStruct obj;
-		obj.FillCustomValues();
+		obj.SetCustomValues();
 		rs2::SaveObjToTokDoc(rootNode, &obj, *structDesc);
 	}
 	{
 		SimpleStruct obj;
+		bool ok = rs2::LoadObjFromTokDoc(&obj, *structDesc, rootNode,
+			rs2::STokDocLoadConfig(rs2::TOKDOC_FLAG_REQUIRED));
+		EXPECT_TRUE(ok);
+		obj.CheckCustomValues();
+	}
+}
+
+TEST(TokDoc, DerivedStructTokDocSaveLoad)
+{
+	unique_ptr<rs2::StructDesc> simpleStructDesc = SimpleStruct::CreateStructDesc();
+	unique_ptr<rs2::StructDesc> derivedStructDesc = DerivedStruct::CreateStructDesc(simpleStructDesc.get());
+	common::tokdoc::Node rootNode;
+	{
+		DerivedStruct obj;
+		obj.SetCustomValues();
+		rs2::SaveObjToTokDoc(rootNode, &obj, *derivedStructDesc);
+	}
+	{
+		DerivedStruct obj;
+		bool ok = rs2::LoadObjFromTokDoc(&obj, *derivedStructDesc, rootNode,
+			rs2::STokDocLoadConfig(rs2::TOKDOC_FLAG_REQUIRED));
+		EXPECT_TRUE(ok);
+		obj.CheckCustomValues();
+	}
+}
+
+TEST(TokDoc, ContainerStructTokDocSaveLoad)
+{
+	unique_ptr<rs2::StructDesc> simpleStructDesc = SimpleStruct::CreateStructDesc();
+	unique_ptr<rs2::StructDesc> containerStructDesc = ContainerStruct::CreateStructDesc(simpleStructDesc.get());
+	common::tokdoc::Node rootNode;
+	{
+		ContainerStruct obj;
+		obj.SetCustomValues();
+		rs2::SaveObjToTokDoc(rootNode, &obj, *containerStructDesc);
+	}
+	{
+		ContainerStruct obj;
+		bool ok = rs2::LoadObjFromTokDoc(&obj, *containerStructDesc, rootNode,
+			rs2::STokDocLoadConfig(rs2::TOKDOC_FLAG_REQUIRED));
+		EXPECT_TRUE(ok);
+		obj.CheckCustomValues();
+	}
+}
+
+TEST(TokDoc, MathStructTokDocSaveLoad)
+{
+	unique_ptr<rs2::StructDesc> structDesc = MathStruct::CreateStructDesc();
+	common::tokdoc::Node rootNode;
+	{
+		MathStruct obj;
+		obj.SetCustomValues();
+		rs2::SaveObjToTokDoc(rootNode, &obj, *structDesc);
+	}
+	{
+		MathStruct obj;
 		bool ok = rs2::LoadObjFromTokDoc(&obj, *structDesc, rootNode,
 			rs2::STokDocLoadConfig(rs2::TOKDOC_FLAG_REQUIRED));
 		EXPECT_TRUE(ok);
