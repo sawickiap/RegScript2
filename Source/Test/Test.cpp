@@ -15,6 +15,12 @@
 
 namespace rs2 = RegScript2;
 
+using std::unique_ptr;
+using std::wstring;
+using common::VEC2;
+using common::VEC3;
+using common::VEC4;
+
 class Environment : public ::testing::Environment
 {
 public:
@@ -39,7 +45,7 @@ public:
 	bool TextContains(const wchar_t* str) const;
 
 private:
-	std::wstring m_Text;
+	wstring m_Text;
 };
 
 void CPrinter::printf(const wchar_t* format, ...)
@@ -62,7 +68,7 @@ void CPrinter::printf(const wchar_t* format, ...)
 
 bool CPrinter::TextContains(const wchar_t* str) const
 {
-	return m_Text.find(str) != std::wstring::npos;
+	return m_Text.find(str) != wstring::npos;
 }
 
 class SimpleStruct
@@ -74,12 +80,12 @@ public:
 	rs2::StringParam StringParam;
 	rs2::GameTimeParam GameTimeParam;
 
-	static std::unique_ptr<rs2::StructDesc> CreateStructDesc();
+	static unique_ptr<rs2::StructDesc> CreateStructDesc();
 };
 
-std::unique_ptr<rs2::StructDesc> SimpleStruct::CreateStructDesc()
+unique_ptr<rs2::StructDesc> SimpleStruct::CreateStructDesc()
 {
-	std::unique_ptr<rs2::StructDesc> structDesc =
+	unique_ptr<rs2::StructDesc> structDesc =
 		std::make_unique<rs2::StructDesc>(L"SimpleStruct", sizeof(SimpleStruct));
 
 	structDesc->AddParam(
@@ -111,12 +117,12 @@ class DerivedStruct : public SimpleStruct
 public:
 	rs2::UintParam DerivedUintParam;
 
-	static std::unique_ptr<rs2::StructDesc> CreateStructDesc(const rs2::StructDesc* baseStructDesc);
+	static unique_ptr<rs2::StructDesc> CreateStructDesc(const rs2::StructDesc* baseStructDesc);
 };
 
-std::unique_ptr<rs2::StructDesc> DerivedStruct::CreateStructDesc(const rs2::StructDesc* baseStructDesc)
+unique_ptr<rs2::StructDesc> DerivedStruct::CreateStructDesc(const rs2::StructDesc* baseStructDesc)
 {
-	std::unique_ptr<rs2::StructDesc> StructDesc =
+	unique_ptr<rs2::StructDesc> StructDesc =
 		std::make_unique<rs2::StructDesc>(L"DerivedStruct", sizeof(DerivedStruct), baseStructDesc);
 
 	StructDesc->AddParam(
@@ -133,12 +139,12 @@ public:
 	rs2::StructParam<SimpleStruct> StructParam;
 	rs2::FixedSizeArrayParam<rs2::UintParam, 3> FixedSizeArrayParam;
 
-	static std::unique_ptr<rs2::StructDesc> CreateStructDesc(const rs2::StructDesc* simpleStructDesc);
+	static unique_ptr<rs2::StructDesc> CreateStructDesc(const rs2::StructDesc* simpleStructDesc);
 };
 
-std::unique_ptr<rs2::StructDesc> ContainerStruct::CreateStructDesc(const rs2::StructDesc* simpleStructDesc)
+unique_ptr<rs2::StructDesc> ContainerStruct::CreateStructDesc(const rs2::StructDesc* simpleStructDesc)
 {
-	std::unique_ptr<rs2::StructDesc> StructDesc =
+	unique_ptr<rs2::StructDesc> StructDesc =
 		std::make_unique<rs2::StructDesc>(L"ContainerStruct", sizeof(ContainerStruct));
 
 	StructDesc->AddParam(
@@ -156,9 +162,9 @@ std::unique_ptr<rs2::StructDesc> ContainerStruct::CreateStructDesc(const rs2::St
 class Fixture1 : public ::testing::Test
 {
 protected:
-	std::unique_ptr<rs2::StructDesc> m_SimpleStructDesc;
-	std::unique_ptr<rs2::StructDesc> m_DerivedStructDesc;
-	std::unique_ptr<rs2::StructDesc> m_ContainerStructDesc;
+	unique_ptr<rs2::StructDesc> m_SimpleStructDesc;
+	unique_ptr<rs2::StructDesc> m_DerivedStructDesc;
+	unique_ptr<rs2::StructDesc> m_ContainerStructDesc;
 
 	Fixture1();
 	~Fixture1() { }
@@ -529,51 +535,51 @@ public:
 	rs2::Vec3Param Vec3Param;
 	rs2::Vec4Param Vec4Param;
 
-	static std::unique_ptr<rs2::StructDesc> CreateStructDesc();
+	static unique_ptr<rs2::StructDesc> CreateStructDesc();
 };
 
-std::unique_ptr<rs2::StructDesc> MathStruct::CreateStructDesc()
+unique_ptr<rs2::StructDesc> MathStruct::CreateStructDesc()
 {
-	std::unique_ptr<rs2::StructDesc> structDesc =
+	unique_ptr<rs2::StructDesc> structDesc =
 		std::make_unique<rs2::StructDesc>(L"MathStruct", sizeof(MathStruct));
 
 	structDesc->AddParam(
 		L"Vec2Param",
 		offsetof(MathStruct, Vec2Param),
-		rs2::Vec2ParamDesc().SetDefault(common::VEC2(1.f, 2.f)));
+		rs2::Vec2ParamDesc().SetDefault(VEC2(1.f, 2.f)));
 	structDesc->AddParam(
 		L"Vec3Param",
 		offsetof(MathStruct, Vec3Param),
-		rs2::Vec3ParamDesc().SetDefault(common::VEC3(1.f, 2.f, 3.f)));
+		rs2::Vec3ParamDesc().SetDefault(VEC3(1.f, 2.f, 3.f)));
 	structDesc->AddParam(
 		L"Vec4Param",
 		offsetof(MathStruct, Vec4Param),
-		rs2::Vec4ParamDesc().SetDefault(common::VEC4(1.f, 2.f, 3.f, 4.f)));
+		rs2::Vec4ParamDesc().SetDefault(VEC4(1.f, 2.f, 3.f, 4.f)));
 
 	return structDesc;
 }
 
 TEST(Math, SetObjToDefault)
 {
-	std::unique_ptr<rs2::StructDesc> structDesc = MathStruct::CreateStructDesc();
+	unique_ptr<rs2::StructDesc> structDesc = MathStruct::CreateStructDesc();
 	MathStruct obj;
 	structDesc->SetObjToDefault(&obj);
-	EXPECT_EQ(common::VEC2(1.f, 2.f), obj.Vec2Param.Value);
-	EXPECT_EQ(common::VEC3(1.f, 2.f, 3.f), obj.Vec3Param.Value);
-	EXPECT_EQ(common::VEC4(1.f, 2.f, 3.f, 4.f), obj.Vec4Param.Value);
+	EXPECT_EQ(VEC2(1.f, 2.f), obj.Vec2Param.Value);
+	EXPECT_EQ(VEC3(1.f, 2.f, 3.f), obj.Vec3Param.Value);
+	EXPECT_EQ(VEC4(1.f, 2.f, 3.f, 4.f), obj.Vec4Param.Value);
 }
 
 TEST(Math, CopyObj)
 {
-	std::unique_ptr<rs2::StructDesc> structDesc = MathStruct::CreateStructDesc();
+	unique_ptr<rs2::StructDesc> structDesc = MathStruct::CreateStructDesc();
 	MathStruct obj1, obj2;
-	obj1.Vec2Param.Value = common::VEC2(11.f, 22.f);
-	obj1.Vec3Param.Value = common::VEC3(11.f, 22.f, 33.f);
-	obj1.Vec4Param.Value = common::VEC4(11.f, 22.f, 33.f, 44.f);
+	obj1.Vec2Param.Value = VEC2(11.f, 22.f);
+	obj1.Vec3Param.Value = VEC3(11.f, 22.f, 33.f);
+	obj1.Vec4Param.Value = VEC4(11.f, 22.f, 33.f, 44.f);
 	structDesc->CopyObj(&obj2, &obj1);
-	EXPECT_EQ(common::VEC2(11.f, 22.f), obj2.Vec2Param.Value);
-	EXPECT_EQ(common::VEC3(11.f, 22.f, 33.f), obj2.Vec3Param.Value);
-	EXPECT_EQ(common::VEC4(11.f, 22.f, 33.f, 44.f), obj2.Vec4Param.Value);
+	EXPECT_EQ(VEC2(11.f, 22.f), obj2.Vec2Param.Value);
+	EXPECT_EQ(VEC3(11.f, 22.f, 33.f), obj2.Vec3Param.Value);
+	EXPECT_EQ(VEC4(11.f, 22.f, 33.f, 44.f), obj2.Vec4Param.Value);
 }
 
 TEST(Math, TokDocLoad)
@@ -590,7 +596,7 @@ TEST(Math, TokDocLoad)
 		rootNode.LoadChildren(tokenizer);
 	}
 
-	std::unique_ptr<rs2::StructDesc> structDesc = MathStruct::CreateStructDesc();
+	unique_ptr<rs2::StructDesc> structDesc = MathStruct::CreateStructDesc();
 	MathStruct obj;
 	bool ok = rs2::LoadObjFromTokDoc(
 		&obj,
@@ -599,9 +605,9 @@ TEST(Math, TokDocLoad)
 		rs2::STokDocLoadConfig(rs2::TOKDOC_FLAG_REQUIRED));
 	EXPECT_TRUE(ok);
 
-	EXPECT_EQ(common::VEC2(11.f, 12.f), obj.Vec2Param.Value);
-	EXPECT_EQ(common::VEC3(11.f, 12.f, 13.f), obj.Vec3Param.Value);
-	EXPECT_EQ(common::VEC4(11.f, 12.f, 13.f, 14.f), obj.Vec4Param.Value);
+	EXPECT_EQ(VEC2(11.f, 12.f), obj.Vec2Param.Value);
+	EXPECT_EQ(VEC3(11.f, 12.f, 13.f), obj.Vec3Param.Value);
+	EXPECT_EQ(VEC4(11.f, 12.f, 13.f, 14.f), obj.Vec4Param.Value);
 }
 
 TEST(Math, TokDocLoadAlternative)
@@ -618,7 +624,7 @@ TEST(Math, TokDocLoadAlternative)
 		rootNode.LoadChildren(tokenizer);
 	}
 
-	std::unique_ptr<rs2::StructDesc> structDesc = MathStruct::CreateStructDesc();
+	unique_ptr<rs2::StructDesc> structDesc = MathStruct::CreateStructDesc();
 	MathStruct obj;
 	bool ok = rs2::LoadObjFromTokDoc(
 		&obj,
@@ -627,9 +633,9 @@ TEST(Math, TokDocLoadAlternative)
 		rs2::STokDocLoadConfig(rs2::TOKDOC_FLAG_REQUIRED));
 	EXPECT_TRUE(ok);
 
-	EXPECT_EQ(common::VEC2(11.f, 12.f), obj.Vec2Param.Value);
-	EXPECT_EQ(common::VEC3(11.f, 12.f, 13.f), obj.Vec3Param.Value);
-	EXPECT_EQ(common::VEC4(11.f, 12.f, 13.f, 14.f), obj.Vec4Param.Value);
+	EXPECT_EQ(VEC2(11.f, 12.f), obj.Vec2Param.Value);
+	EXPECT_EQ(VEC3(11.f, 12.f, 13.f), obj.Vec3Param.Value);
+	EXPECT_EQ(VEC4(11.f, 12.f, 13.f, 14.f), obj.Vec4Param.Value);
 }
 
 TEST(Math, TokDocLoadRequiredButNotFound)
@@ -643,7 +649,7 @@ TEST(Math, TokDocLoadRequiredButNotFound)
 		rootNode.LoadChildren(tokenizer);
 	}
 
-	std::unique_ptr<rs2::StructDesc> structDesc = MathStruct::CreateStructDesc();
+	unique_ptr<rs2::StructDesc> structDesc = MathStruct::CreateStructDesc();
 	MathStruct obj;
 	EXPECT_THROW(
 		rs2::LoadObjFromTokDoc(
@@ -669,7 +675,7 @@ TEST(Math, DISABLED_TokDocLoadOptionalCorrectButNotCorrect)
 		rootNode.LoadChildren(tokenizer);
 	}
 
-	std::unique_ptr<rs2::StructDesc> structDesc = MathStruct::CreateStructDesc();
+	unique_ptr<rs2::StructDesc> structDesc = MathStruct::CreateStructDesc();
 	MathStruct obj;
 	EXPECT_THROW(
 		rs2::LoadObjFromTokDoc(
@@ -691,7 +697,7 @@ TEST(Math, TokDocLoadOptionalAndNotFound)
 		rootNode.LoadChildren(tokenizer);
 	}
 
-	std::unique_ptr<rs2::StructDesc> structDesc = MathStruct::CreateStructDesc();
+	unique_ptr<rs2::StructDesc> structDesc = MathStruct::CreateStructDesc();
 	MathStruct obj;
 	CPrinter printer;
 	bool ok = rs2::LoadObjFromTokDoc(
