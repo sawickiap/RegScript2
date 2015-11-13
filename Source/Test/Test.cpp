@@ -949,6 +949,80 @@ TEST(TokDoc, MathStructTokDocStringSaveLoad)
 	}
 }
 
+struct PolymorphicBaseStruct
+{
+	rs2::UintParam BaseUintParam;
+
+	virtual ~PolymorphicBaseStruct() { }
+	void SetCustomValues();
+	void CheckCustomValues() const;
+
+	static unique_ptr<rs2::StructDesc> CreateStructDesc();
+};
+
+void PolymorphicBaseStruct::SetCustomValues()
+{
+	BaseUintParam.Value = 666;
+}
+
+void PolymorphicBaseStruct::CheckCustomValues() const
+{
+	EXPECT_EQ(666, BaseUintParam.Value);
+}
+
+unique_ptr<rs2::StructDesc> PolymorphicBaseStruct::CreateStructDesc()
+{
+	unique_ptr<rs2::StructDesc> structDesc =
+		std::make_unique<rs2::StructDesc>(L"PolymorphicBaseStruct", sizeof(PolymorphicBaseStruct));
+	structDesc->AddParam(
+		L"BaseUintParam",
+		offsetof(PolymorphicBaseStruct, BaseUintParam),
+		rs2::UintParamDesc().SetDefault(555));
+	return structDesc;
+}
+
+struct PolymorphicDerivedStruct : public PolymorphicBaseStruct
+{
+	rs2::UintParam DerivedUintParam;
+
+	void SetCustomValues();
+	void CheckCustomValues() const;
+
+	static unique_ptr<rs2::StructDesc> CreateStructDesc(const rs2::StructDesc* baseStructDesc);
+};
+
+void PolymorphicDerivedStruct::SetCustomValues()
+{
+	PolymorphicBaseStruct::SetCustomValues();
+	DerivedUintParam.Value = 444;
+}
+
+void PolymorphicDerivedStruct::CheckCustomValues() const
+{
+	PolymorphicBaseStruct::CheckCustomValues();
+	EXPECT_EQ(444, DerivedUintParam.Value);
+}
+
+unique_ptr<rs2::StructDesc> PolymorphicDerivedStruct::CreateStructDesc(const rs2::StructDesc* baseStructDesc)
+{
+	unique_ptr<rs2::StructDesc> structDesc =
+		std::make_unique<rs2::StructDesc>(L"PolymorphicDerivedStruct", sizeof(PolymorphicDerivedStruct), baseStructDesc);
+	structDesc->AddParam(
+		L"DerivedUintParam",
+		offsetof(PolymorphicDerivedStruct, DerivedUintParam),
+		rs2::UintParamDesc().SetDefault(333));
+	return structDesc;
+}
+
+TEST(PolymorphicStruct, SetAndGet)
+{
+	unique_ptr<rs2::StructDesc> baseStructDesc = PolymorphicBaseStruct::CreateStructDesc();
+	unique_ptr<rs2::StructDesc> derivedStructDesc = PolymorphicDerivedStruct::CreateStructDesc(baseStructDesc.get());
+	unique_ptr<PolymorphicDerivedStruct> obj = std::make_unique<PolymorphicDerivedStruct>();
+	obj->SetCustomValues();
+	obj->CheckCustomValues();
+}
+
 int wmain(int argc, wchar_t** argv)
 {
 	::testing::AddGlobalTestEnvironment(new Environment());
