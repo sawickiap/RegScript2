@@ -80,8 +80,39 @@ public:
 	rs2::StringParam StringParam;
 	rs2::GameTimeParam GameTimeParam;
 
+	void CheckDefaultValues() const;
+	void FillCustomValues();
+	void CheckCustomValues() const;
+
 	static unique_ptr<rs2::StructDesc> CreateStructDesc();
 };
+
+void SimpleStruct::CheckDefaultValues() const
+{
+	EXPECT_EQ(true, BoolParam.Value);
+	EXPECT_EQ(123, UintParam.Value);
+	EXPECT_EQ(3.14f, FloatParam.Value);
+	EXPECT_EQ(L"StringDefault", StringParam.Value);
+	EXPECT_EQ(common::MillisecondsToGameTime(1023), GameTimeParam.Value);
+}
+
+void SimpleStruct::FillCustomValues()
+{
+	BoolParam.Value = false;
+	UintParam.Value = 124;
+	FloatParam.Value = 13.5f;
+	StringParam.Value = L"ABC";
+	GameTimeParam.Value = common::MillisecondsToGameTime(123);
+}
+
+void SimpleStruct::CheckCustomValues() const
+{
+	EXPECT_FALSE(BoolParam.Value);
+	EXPECT_EQ(124, UintParam.Value);
+	EXPECT_EQ(13.5f, FloatParam.Value);
+	EXPECT_EQ(L"ABC", StringParam.Value);
+	EXPECT_EQ(common::MillisecondsToGameTime(123), GameTimeParam.Value);
+}
 
 unique_ptr<rs2::StructDesc> SimpleStruct::CreateStructDesc()
 {
@@ -183,12 +214,7 @@ TEST_F(Fixture1, SimpleSetDefault)
 {
 	SimpleStruct obj;
 	m_SimpleStructDesc->SetObjToDefault(&obj);
-
-	EXPECT_EQ(true, obj.BoolParam.Value);
-	EXPECT_EQ(123, obj.UintParam.Value);
-	EXPECT_EQ(3.14f, obj.FloatParam.Value);
-	EXPECT_EQ(L"StringDefault", obj.StringParam.Value);
-	EXPECT_EQ(common::MillisecondsToGameTime(1023), obj.GameTimeParam.Value);
+	obj.CheckDefaultValues();
 }
 
 TEST_F(Fixture1, SimpleCopyObj)
@@ -196,24 +222,14 @@ TEST_F(Fixture1, SimpleCopyObj)
 	SimpleStruct obj1, obj2;
 	m_SimpleStructDesc->SetObjToDefault(&obj1);
 	m_SimpleStructDesc->CopyObj(&obj2, &obj1);
-
-	EXPECT_EQ(true, obj2.BoolParam.Value);
-	EXPECT_EQ(123, obj2.UintParam.Value);
-	EXPECT_EQ(3.14f, obj2.FloatParam.Value);
-	EXPECT_EQ(L"StringDefault", obj2.StringParam.Value);
-	EXPECT_EQ(common::MillisecondsToGameTime(1023), obj2.GameTimeParam.Value);
+	obj2.CheckDefaultValues();
 }
 
 TEST_F(Fixture1, DerivedSetDefault)
 {
 	DerivedStruct obj;
 	m_DerivedStructDesc->SetObjToDefault(&obj);
-
-	EXPECT_EQ(true, obj.BoolParam.Value);
-	EXPECT_EQ(123, obj.UintParam.Value);
-	EXPECT_EQ(3.14f, obj.FloatParam.Value);
-	EXPECT_EQ(L"StringDefault", obj.StringParam.Value);
-	EXPECT_EQ(common::MillisecondsToGameTime(1023), obj.GameTimeParam.Value);
+	obj.CheckDefaultValues();
 	EXPECT_EQ(555, obj.DerivedUintParam.Value);
 }
 
@@ -222,12 +238,7 @@ TEST_F(Fixture1, DerivedCopyObj)
 	DerivedStruct obj1, obj2;
 	m_DerivedStructDesc->SetObjToDefault(&obj1);
 	m_DerivedStructDesc->CopyObj(&obj2, &obj1);
-
-	EXPECT_EQ(true, obj2.BoolParam.Value);
-	EXPECT_EQ(123, obj2.UintParam.Value);
-	EXPECT_EQ(3.14f, obj2.FloatParam.Value);
-	EXPECT_EQ(L"StringDefault", obj2.StringParam.Value);
-	EXPECT_EQ(common::MillisecondsToGameTime(1023), obj2.GameTimeParam.Value);
+	obj2.CheckDefaultValues();
 	EXPECT_EQ(555, obj2.DerivedUintParam.Value);
 }
 
@@ -235,12 +246,7 @@ TEST_F(Fixture1, ContainerSetDefault)
 {
 	ContainerStruct obj;
 	m_ContainerStructDesc->SetObjToDefault(&obj);
-
-	EXPECT_EQ(true, obj.StructParam.Value.BoolParam.Value);
-	EXPECT_EQ(123, obj.StructParam.Value.UintParam.Value);
-	EXPECT_EQ(3.14f, obj.StructParam.Value.FloatParam.Value);
-	EXPECT_EQ(L"StringDefault", obj.StructParam.Value.StringParam.Value);
-	EXPECT_EQ(common::MillisecondsToGameTime(1023), obj.StructParam.Value.GameTimeParam.Value);
+	obj.StructParam.Value.CheckDefaultValues();
 	EXPECT_EQ(124, obj.FixedSizeArrayParam.Values[0].Value);
 	EXPECT_EQ(124, obj.FixedSizeArrayParam.Values[1].Value);
 	EXPECT_EQ(124, obj.FixedSizeArrayParam.Values[2].Value);
@@ -251,12 +257,7 @@ TEST_F(Fixture1, ContainerCopyObj)
 	ContainerStruct obj1, obj2;
 	m_ContainerStructDesc->SetObjToDefault(&obj1);
 	m_ContainerStructDesc->CopyObj(&obj2, &obj1);
-
-	EXPECT_EQ(true, obj2.StructParam.Value.BoolParam.Value);
-	EXPECT_EQ(123, obj2.StructParam.Value.UintParam.Value);
-	EXPECT_EQ(3.14f, obj2.StructParam.Value.FloatParam.Value);
-	EXPECT_EQ(L"StringDefault", obj2.StructParam.Value.StringParam.Value);
-	EXPECT_EQ(common::MillisecondsToGameTime(1023), obj2.StructParam.Value.GameTimeParam.Value);
+	obj2.StructParam.Value.CheckDefaultValues();
 	EXPECT_EQ(124, obj2.FixedSizeArrayParam.Values[0].Value);
 	EXPECT_EQ(124, obj2.FixedSizeArrayParam.Values[1].Value);
 	EXPECT_EQ(124, obj2.FixedSizeArrayParam.Values[2].Value);
@@ -709,6 +710,24 @@ TEST(Math, TokDocLoadOptionalAndNotFound)
 	EXPECT_TRUE(printer.TextContains(L"Vec2Param"));
 	EXPECT_TRUE(printer.TextContains(L"Vec3Param"));
 	EXPECT_TRUE(printer.TextContains(L"Vec4Param"));
+}
+
+TEST(TokDoc, SimpleStructTokDocSaveLoad)
+{
+	unique_ptr<rs2::StructDesc> structDesc = SimpleStruct::CreateStructDesc();
+	common::tokdoc::Node rootNode;
+	{
+		SimpleStruct obj;
+		obj.FillCustomValues();
+		rs2::SaveObjToTokDoc(rootNode, &obj, *structDesc);
+	}
+	{
+		SimpleStruct obj;
+		bool ok = rs2::LoadObjFromTokDoc(&obj, *structDesc, rootNode,
+			rs2::STokDocLoadConfig(rs2::TOKDOC_FLAG_REQUIRED));
+		EXPECT_TRUE(ok);
+		obj.CheckCustomValues();
+	}
 }
 
 int wmain(int argc, wchar_t** argv)
