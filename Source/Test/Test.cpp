@@ -847,6 +847,108 @@ TEST(TokDoc, MathStructTokDocSaveLoad)
 	}
 }
 
+TEST(TokDoc, SimpleStructTokDocStringSaveLoad)
+{
+	unique_ptr<rs2::StructDesc> structDesc = SimpleStruct::CreateStructDesc();
+	wstring doc;
+	{
+		SimpleStruct obj;
+		obj.SetCustomValues();
+		common::tokdoc::Node rootNode;
+		rs2::SaveObjToTokDoc(rootNode, &obj, *structDesc);
+		common::TokenWriter tokenWriter(&doc);
+		rootNode.SaveChildren(tokenWriter);
+	}
+	{
+		common::tokdoc::Node rootNode;
+		common::Tokenizer tokenizer(&doc, common::Tokenizer::FLAG_MULTILINE_STRINGS);
+		tokenizer.Next();
+		rootNode.LoadChildren(tokenizer);
+		SimpleStruct obj;
+		bool ok = rs2::LoadObjFromTokDoc(&obj, *structDesc, rootNode,
+			rs2::STokDocLoadConfig(rs2::TOKDOC_FLAG_REQUIRED));
+		EXPECT_TRUE(ok);
+		obj.CheckCustomValues();
+	}
+}
+
+TEST(TokDoc, DerivedStructTokDocStringSaveLoad)
+{
+	unique_ptr<rs2::StructDesc> simpleStructDesc = SimpleStruct::CreateStructDesc();
+	unique_ptr<rs2::StructDesc> derivedStructDesc = DerivedStruct::CreateStructDesc(simpleStructDesc.get());
+	wstring doc;
+	{
+		DerivedStruct obj;
+		obj.SetCustomValues();
+		common::tokdoc::Node rootNode;
+		rs2::SaveObjToTokDoc(rootNode, &obj, *derivedStructDesc);
+		common::TokenWriter tokenWriter(&doc);
+		rootNode.SaveChildren(tokenWriter);
+	}
+	{
+		common::tokdoc::Node rootNode;
+		common::Tokenizer tokenizer(&doc, common::Tokenizer::FLAG_MULTILINE_STRINGS);
+		tokenizer.Next();
+		rootNode.LoadChildren(tokenizer);
+		DerivedStruct obj;
+		bool ok = rs2::LoadObjFromTokDoc(&obj, *derivedStructDesc, rootNode,
+			rs2::STokDocLoadConfig(rs2::TOKDOC_FLAG_REQUIRED));
+		EXPECT_TRUE(ok);
+		obj.CheckCustomValues();
+	}
+}
+
+TEST(TokDoc, ContainerStructTokDocStringSaveLoad)
+{
+	unique_ptr<rs2::StructDesc> simpleStructDesc = SimpleStruct::CreateStructDesc();
+	unique_ptr<rs2::StructDesc> containerStructDesc = ContainerStruct::CreateStructDesc(simpleStructDesc.get());
+	wstring doc;
+	{
+		ContainerStruct obj;
+		obj.SetCustomValues();
+		common::tokdoc::Node rootNode;
+		rs2::SaveObjToTokDoc(rootNode, &obj, *containerStructDesc);
+		common::TokenWriter tokenWriter(&doc);
+		rootNode.SaveChildren(tokenWriter);
+	}
+	{
+		common::tokdoc::Node rootNode;
+		common::Tokenizer tokenizer(&doc, common::Tokenizer::FLAG_MULTILINE_STRINGS);
+		tokenizer.Next();
+		rootNode.LoadChildren(tokenizer);
+		ContainerStruct obj;
+		bool ok = rs2::LoadObjFromTokDoc(&obj, *containerStructDesc, rootNode,
+			rs2::STokDocLoadConfig(rs2::TOKDOC_FLAG_REQUIRED));
+		EXPECT_TRUE(ok);
+		obj.CheckCustomValues();
+	}
+}
+
+TEST(TokDoc, MathStructTokDocStringSaveLoad)
+{
+	unique_ptr<rs2::StructDesc> structDesc = MathStruct::CreateStructDesc();
+	wstring doc;
+	{
+		MathStruct obj;
+		obj.SetCustomValues();
+		common::tokdoc::Node rootNode;
+		rs2::SaveObjToTokDoc(rootNode, &obj, *structDesc);
+		common::TokenWriter tokenWriter(&doc);
+		rootNode.SaveChildren(tokenWriter);
+	}
+	{
+		common::tokdoc::Node rootNode;
+		common::Tokenizer tokenizer(&doc, common::Tokenizer::FLAG_MULTILINE_STRINGS);
+		tokenizer.Next();
+		rootNode.LoadChildren(tokenizer);
+		MathStruct obj;
+		bool ok = rs2::LoadObjFromTokDoc(&obj, *structDesc, rootNode,
+			rs2::STokDocLoadConfig(rs2::TOKDOC_FLAG_REQUIRED));
+		EXPECT_TRUE(ok);
+		obj.CheckCustomValues();
+	}
+}
+
 int wmain(int argc, wchar_t** argv)
 {
 	::testing::AddGlobalTestEnvironment(new Environment());
