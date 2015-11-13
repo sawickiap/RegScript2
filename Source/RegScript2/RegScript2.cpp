@@ -1,4 +1,3 @@
-#include "PCH.hpp"
 #include "Include/RegScript2.hpp"
 
 namespace RegScript2

@@ -1,5 +1,7 @@
 #pragma once
 
+#include "RegScript2_Utils.hpp"
+
 #include <Common/Base.hpp>
 #include <Common/Math.hpp>
 #include <Common/DateTime.hpp>
@@ -14,13 +16,6 @@
 
 namespace RegScript2
 {
-
-class IPrinter
-{
-public:
-	virtual ~IPrinter() { }
-	virtual void printf(const wchar_t* format, ...) = 0;
-};
 
 class StructDesc;
 
@@ -211,7 +206,11 @@ class UintParamDesc : public TypedParamDesc<uint32_t>
 public:
 	typedef UintParam Param_t;
 
+	uint32_t Base;
+
+	UintParamDesc() : Base(10) { }
 	UintParamDesc& SetDefault(uint32_t defaultValue) { DefaultValue = defaultValue; return *this; }
+	UintParamDesc& SetBase(uint32_t base) { Base = base; return *this; }
 
 	virtual size_t GetParamSize() const { return sizeof(Param_t); }
 	virtual void SetToDefault(void* param) const
@@ -229,7 +228,19 @@ class FloatParamDesc : public TypedParamDesc<float>
 public:
 	typedef FloatParam Param_t;
 
+	// It only affects the way of displaying value.
+	enum FORMAT
+	{
+		FORMAT_NORMAL,
+		FORMAT_PERCENT, // Doesn't limit range to 0..1.
+		FORMAT_DB,      // Value must be positive. Otherwise NORMAL is used.
+		FORMAT_COUNT
+	};
+	FORMAT Format;
+
+	FloatParamDesc() : Format(FORMAT_NORMAL) { }
 	FloatParamDesc& SetDefault(float defaultValue) { DefaultValue = defaultValue; return *this; }
+	FloatParamDesc& SetFormat(FORMAT format) { Format = format; return *this; }
 
 	virtual size_t GetParamSize() const { return sizeof(Param_t); }
 	virtual void SetToDefault(void* param) const

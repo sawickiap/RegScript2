@@ -1,4 +1,3 @@
-#include "PCH.hpp"
 #include "Include/RegScript2_TokDoc.hpp"
 
 namespace RegScript2
