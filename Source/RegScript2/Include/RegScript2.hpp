@@ -206,11 +206,18 @@ class UintParamDesc : public TypedParamDesc<uint32_t>
 public:
 	typedef UintParam Param_t;
 
-	uint32_t Base;
+	// It only affects the way of displaying value.
+	enum FORMAT
+	{
+		FORMAT_DEC,
+		FORMAT_HEX, // "0x" prefix.
+		FORMAT_COUNT
+	};
+	FORMAT Format;
 
-	UintParamDesc() : Base(10) { }
+	UintParamDesc() : Format(FORMAT_DEC) { }
 	UintParamDesc& SetDefault(uint32_t defaultValue) { DefaultValue = defaultValue; return *this; }
-	UintParamDesc& SetBase(uint32_t base) { Base = base; return *this; }
+	UintParamDesc& SetFormat(FORMAT format) { Format = format; return *this; }
 
 	virtual size_t GetParamSize() const { return sizeof(Param_t); }
 	virtual void SetToDefault(void* param) const

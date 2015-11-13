@@ -62,7 +62,18 @@ void DebugPrintParam(
 {
 	const UintParam* uintParam = (const UintParam*)srcParam;
 	wstring valueStr;
-	common::UintToStr(&valueStr, uintParam->Value, paramDesc.Base);
+	switch(paramDesc.Format)
+	{
+	case UintParamDesc::FORMAT_DEC:
+		common::UintToStr(&valueStr, uintParam->Value, 10);
+		break;
+	case UintParamDesc::FORMAT_HEX:
+		common::UintToStr(&valueStr, uintParam->Value, 10);
+		valueStr.insert(0, L"0x");
+		break;
+	default:
+		assert(0);
+	}
 	DebugPrintParamValue(printer, indentLevel, paramName, valueStr.c_str());
 }
 
