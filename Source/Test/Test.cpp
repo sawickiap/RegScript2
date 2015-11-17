@@ -1248,6 +1248,65 @@ TEST(StringConversion, Vec4)
 	EXPECT_FLOAT_EQ(1e-6f, s.Vec4Param.Value.w);
 }
 
+TEST(FindObjParamByPath, Simple)
+{
+	unique_ptr<rs2::StructDesc> structDesc = SimpleStruct::CreateStructDesc();
+	SimpleStruct s;
+	s.UintParam.Value = 123;
+
+	void* param = nullptr;
+	const rs2::ParamDesc* paramDesc = nullptr;
+	ASSERT_TRUE( rs2::FindObjParamByPath(
+		param, paramDesc,
+		&s, *structDesc,
+		L"UintParam") );
+	ASSERT_TRUE(param != nullptr);
+	ASSERT_TRUE(paramDesc != nullptr);
+	ASSERT_TRUE(typeid(rs2::UintParamDesc) == typeid(*paramDesc));
+	rs2::UintParam* uintParam = (rs2::UintParam*)param;
+	EXPECT_EQ(123, uintParam->Value);
+}
+
+TEST(FindObjParamByPath, SubStruct)
+{
+	unique_ptr<rs2::StructDesc> simpleStructDesc = SimpleStruct::CreateStructDesc();
+	unique_ptr<rs2::StructDesc> containerStructDesc = ContainerStruct::CreateStructDesc(simpleStructDesc.get());
+	ContainerStruct s;
+	s.StructParam.Value.UintParam.Value = 123;
+
+	void* param = nullptr;
+	const rs2::ParamDesc* paramDesc = nullptr;
+	ASSERT_TRUE( rs2::FindObjParamByPath(
+		param, paramDesc,
+		&s, *containerStructDesc,
+		L"StructParam\\UintParam") );
+	ASSERT_TRUE(param != nullptr);
+	ASSERT_TRUE(paramDesc != nullptr);
+	ASSERT_TRUE(typeid(rs2::UintParamDesc) == typeid(*paramDesc));
+	rs2::UintParam* uintParam = (rs2::UintParam*)param;
+	EXPECT_EQ(123, uintParam->Value);
+}
+
+TEST(FindObjParamByPath, FixedSizeArray)
+{
+	unique_ptr<rs2::StructDesc> simpleStructDesc = SimpleStruct::CreateStructDesc();
+	unique_ptr<rs2::StructDesc> containerStructDesc = ContainerStruct::CreateStructDesc(simpleStructDesc.get());
+	ContainerStruct s;
+	s.FixedSizeArrayParam.Values[2].Value = 123;
+
+	void* param = nullptr;
+	const rs2::ParamDesc* paramDesc = nullptr;
+	ASSERT_TRUE( rs2::FindObjParamByPath(
+		param, paramDesc,
+		&s, *containerStructDesc,
+		L"FixedSizeArrayParam[2]") );
+	ASSERT_TRUE(param != nullptr);
+	ASSERT_TRUE(paramDesc != nullptr);
+	ASSERT_TRUE(typeid(rs2::UintParamDesc) == typeid(*paramDesc));
+	rs2::UintParam* uintParam = (rs2::UintParam*)param;
+	EXPECT_EQ(123, uintParam->Value);
+}
+
 int wmain(int argc, wchar_t** argv)
 {
 	::testing::AddGlobalTestEnvironment(new Environment());

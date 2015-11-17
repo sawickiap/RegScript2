@@ -56,6 +56,18 @@ const ParamDesc* StructDesc::GetParamDesc(size_t index) const
 ////////////////////////////////////////////////////////////////////////////////
 // class FixedSizeArrayParamDesc
 
+void* FixedSizeArrayParamDesc::AccessElement(void* param, size_t elementIndex) const
+{
+	size_t elementSize = m_ElementParamDesc->GetParamSize();
+	return (char*)param + elementIndex * elementSize;
+}
+
+const void* FixedSizeArrayParamDesc::AccessElement(const void* param, size_t elementIndex) const
+{
+	size_t elementSize = m_ElementParamDesc->GetParamSize();
+	return (const char*)param + elementIndex * elementSize;
+}
+
 void FixedSizeArrayParamDesc::SetToDefault(void* param) const
 {
 	char* element = (char*)param;
@@ -277,6 +289,94 @@ bool Vec4ParamDesc::Parse(void* dstParam, const wchar_t* src) const
 {
 	Param_t* param = (Param_t*)dstParam;
 	return StrToSth<common::VEC4>(&param->Value, src);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Globals
+
+/*
+This function parses following syntax (and combinations):
+
+	ParamName
+	ParamName\ParamName
+	ParamName[ElementIndex]
+
+It uses following smart algorithm:
+
+In any moment we are either pointing at object (currObj and currStructDesc !=
+null) or at parameter (outParam and outParamDesc != null).
+
+ParamName - Enters parameter of current object.
+\ - Enters object of current parameter.
+[ElementIndex] - Enters element parameter of current parameter.
+*/
+bool FindObjParamByPath(
+	void*& outParam, const ParamDesc*& outParamDesc,
+	void* obj, const StructDesc& structDesc,
+	const wchar_t* path)
+{
+	void* currObj = obj;
+	const StructDesc* currStructDesc = &structDesc;
+	outParam = nullptr;
+	outParamDesc = nullptr;
+	wstring pathStr{path};
+	size_t pathIndex = 0;
+	while(pathIndex < pathStr.length())
+	{
+		// [ElementIndex]
+		if(pathStr[pathIndex] == L'[')
+		{
+			if(outParam == nullptr)
+				return false;
+			if(typeid(FixedSizeArrayParamDesc) != typeid(*outParamDesc))
+				return false;
+			const FixedSizeArrayParamDesc* fixedSizeArrayParamDesc = (const FixedSizeArrayParamDesc*)outParamDesc;
+			size_t closingBracketIndex = pathStr.find(L']', pathIndex + 1);
+			if(closingBracketIndex == wstring::npos)
+				return false;
+			wstring indexStr{pathStr, pathIndex + 1, closingBracketIndex - pathIndex - 1};
+			size_t elementIndex = 0;
+			if(common::StrToUint(&elementIndex, indexStr) != 0)
+				return false;
+			if(elementIndex >= fixedSizeArrayParamDesc->GetCount())
+				return false;
+			outParam = fixedSizeArrayParamDesc->AccessElement(outParam, elementIndex);
+			outParamDesc = fixedSizeArrayParamDesc->GetElementParamDesc();
+			pathIndex = closingBracketIndex + 1;
+		}
+		else if(pathStr[pathIndex] == L'\\')
+		{
+			if(outParam == nullptr)
+				return false;
+			if(typeid(StructParamDesc) != typeid(*outParamDesc))
+				return false;
+			const StructParamDesc* structParamDesc = (const StructParamDesc*)outParamDesc;
+			currObj = outParam;
+			currStructDesc = structParamDesc->GetStructDesc();
+			outParam = nullptr;
+			outParamDesc = nullptr;
+			++pathIndex;
+		}
+		// ParamName
+		else
+		{
+			if(currObj == nullptr)
+				return false;
+			size_t endIndex = pathStr.find_first_of(L"\\[", pathIndex);
+			wstring paramName = endIndex == wstring::npos ?
+				pathStr.substr(pathIndex) :
+				pathStr.substr(pathIndex, endIndex);
+			size_t paramIndex = currStructDesc->Find(paramName.c_str());
+			if(paramIndex == (size_t)-1)
+				return false;
+			outParamDesc = currStructDesc->GetParamDesc(paramIndex);
+			outParam = currStructDesc->AccessRawParam(currObj, paramIndex);
+			currObj = nullptr;
+			currStructDesc = nullptr;
+			pathIndex = endIndex;
+		}
+	}
+	return outParam != nullptr;
 }
 
 } // namespace RegScript2

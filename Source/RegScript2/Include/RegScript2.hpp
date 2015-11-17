@@ -164,6 +164,9 @@ public:
 	const ParamDesc* GetElementParamDesc() const { return m_ElementParamDesc.get(); }
 	size_t GetCount() const { return m_Count; }
 
+	void* AccessElement(void* param, size_t elementIndex) const;
+	const void* AccessElement(const void* param, size_t elementIndex) const;
+
 	inline virtual size_t GetParamSize() const;
 	virtual void SetToDefault(void* param) const;
 	virtual void Copy(void* dstParam, const void* srcParam) const;
@@ -422,6 +425,11 @@ private:
 	size_t m_StructSize;
 	const StructDesc* m_BaseStructDesc;
 };
+
+bool FindObjParamByPath(
+	void*& outParam, const ParamDesc*& outParamDesc,
+	void* obj, const StructDesc& structDesc,
+	const wchar_t* path);
 
 inline size_t StructParamDesc::GetParamSize() const
 {
