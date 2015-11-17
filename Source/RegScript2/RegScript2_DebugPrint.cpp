@@ -13,14 +13,6 @@ static const wchar_t* GetIndent(uint32_t indentLevel)
 	return INDENT + (64 - indentLevel);
 }
 	
-static inline float PowerToDB(float powerRatio)
-{
-	if(powerRatio > 0.f)
-		return 10.f * log10(powerRatio);
-	else
-		return -1000.f;
-}
-
 static void DebugPrintParamValue(
 	IPrinter& printer,
 	uint32_t indentLevel,
@@ -30,141 +22,20 @@ static void DebugPrintParamValue(
 	printer.printf(L"%s%s = %s", GetIndent(indentLevel), paramName, valueStr);
 }
 
-template<typename T>
-static void DebugPrintParamValueDefault(
+static void DebugPrintParamDefault(
 	IPrinter& printer,
-	uint32_t indentLevel,
+	const void* srcParam,
 	const wchar_t* paramName,
-	const T& value)
+	const ParamDesc& paramDesc,
+	uint32_t indentLevel)
 {
 	wstring valueStr;
-	SthToStr<T>(&valueStr, value);
+	bool ok = paramDesc.ToString(valueStr, srcParam);
+	assert(ok);
 	DebugPrintParamValue(printer, indentLevel, paramName, valueStr.c_str());
 }
 
-void DebugPrintParam(
-	IPrinter& printer,
-	const void* srcParam,
-	const wchar_t* paramName,
-	const BoolParamDesc& paramDesc,
-	uint32_t indentLevel)
-{
-	const BoolParam* boolParam = (const BoolParam*)srcParam;
-	DebugPrintParamValueDefault(printer, indentLevel, paramName, boolParam->Value);
-}
-
-void DebugPrintParam(
-	IPrinter& printer,
-	const void* srcParam,
-	const wchar_t* paramName,
-	const UintParamDesc& paramDesc,
-	uint32_t indentLevel)
-{
-	const UintParam* uintParam = (const UintParam*)srcParam;
-	wstring valueStr;
-	switch(paramDesc.Format)
-	{
-	case UintParamDesc::FORMAT_DEC:
-		common::UintToStr(&valueStr, uintParam->Value, 10);
-		break;
-	case UintParamDesc::FORMAT_HEX:
-		common::UintToStr(&valueStr, uintParam->Value, 10);
-		valueStr.insert(0, L"0x");
-		break;
-	default:
-		assert(0);
-	}
-	DebugPrintParamValue(printer, indentLevel, paramName, valueStr.c_str());
-}
-
-void DebugPrintParam(
-	IPrinter& printer,
-	const void* srcParam,
-	const wchar_t* paramName,
-	const FloatParamDesc& paramDesc,
-	uint32_t indentLevel)
-{
-	const FloatParam* floatParam = (const FloatParam*)srcParam;
-	const float value = floatParam->Value;
-	wstring valueStr;
-	if(isfinite(value))
-	{
-		if(paramDesc.Format == FloatParamDesc::FORMAT_PERCENT)
-		{
-			SthToStr<float>(&valueStr, value * 100.f);
-			valueStr += L'%';
-			DebugPrintParamValue(printer, indentLevel, paramName, valueStr.c_str());
-			return;
-		}
-		if(paramDesc.Format == FloatParamDesc::FORMAT_DB && value > 0.f)
-		{
-			SthToStr<float>(&valueStr, PowerToDB(value));
-			valueStr += L"dB";
-			DebugPrintParamValue(printer, indentLevel, paramName, valueStr.c_str());
-			return;
-		}
-	}
-	DebugPrintParamValueDefault(printer, indentLevel, paramName, value);
-}
-
-void DebugPrintParam(
-	IPrinter& printer,
-	const void* srcParam,
-	const wchar_t* paramName,
-	const StringParamDesc& paramDesc,
-	uint32_t indentLevel)
-{
-	const StringParam* stringParam = (const StringParam*)srcParam;
-	DebugPrintParamValue(printer, indentLevel, paramName, stringParam->Value.c_str());
-}
-
-void DebugPrintParam(
-	IPrinter& printer,
-	const void* srcParam,
-	const wchar_t* paramName,
-	const GameTimeParamDesc& paramDesc,
-	uint32_t indentLevel)
-{
-	const GameTimeParam* gameTimeParam = (const GameTimeParam*)srcParam;
-	wstring valueStr;
-	GameTimeToFriendlyStr(valueStr, gameTimeParam->Value);
-	DebugPrintParamValue(printer, indentLevel, paramName, valueStr.c_str());
-}
-
-void DebugPrintParam(
-	IPrinter& printer,
-	const void* srcParam,
-	const wchar_t* paramName,
-	const Vec2ParamDesc& paramDesc,
-	uint32_t indentLevel)
-{
-	const Vec2Param* vecParam = (const Vec2Param*)srcParam;
-	DebugPrintParamValueDefault(printer, indentLevel, paramName, vecParam->Value);
-}
-
-void DebugPrintParam(
-	IPrinter& printer,
-	const void* srcParam,
-	const wchar_t* paramName,
-	const Vec3ParamDesc& paramDesc,
-	uint32_t indentLevel)
-{
-	const Vec3Param* vecParam = (const Vec3Param*)srcParam;
-	DebugPrintParamValueDefault(printer, indentLevel, paramName, vecParam->Value);
-}
-
-void DebugPrintParam(
-	IPrinter& printer,
-	const void* srcParam,
-	const wchar_t* paramName,
-	const Vec4ParamDesc& paramDesc,
-	uint32_t indentLevel)
-{
-	const Vec4Param* vecParam = (const Vec4Param*)srcParam;
-	DebugPrintParamValueDefault(printer, indentLevel, paramName, vecParam->Value);
-}
-
-void DebugPrintParam(
+static void DebugPrintStructParam(
 	IPrinter& printer,
 	const void* srcParam,
 	const wchar_t* paramName,
@@ -175,7 +46,7 @@ void DebugPrintParam(
 	DebugPrintObj(printer, srcParam, *paramDesc.GetStructDesc(), indentLevel + 1);
 }
 
-void DebugPrintParam(
+static void DebugPrintFixedSizeArrayParam(
 	IPrinter& printer,
 	const void* srcParam,
 	const wchar_t* paramName,
@@ -200,29 +71,22 @@ void DebugPrintParam(
 
 void DebugPrintParam(IPrinter& printer, const void* srcParam, const wchar_t* paramName, const ParamDesc& paramDesc, uint32_t indentLevel)
 {
-	if(dynamic_cast<const BoolParamDesc*>(&paramDesc))
-		return DebugPrintParam(printer, srcParam, paramName, (const BoolParamDesc&)paramDesc, indentLevel);
-	if(dynamic_cast<const UintParamDesc*>(&paramDesc))
-		return DebugPrintParam(printer, srcParam, paramName, (const UintParamDesc&)paramDesc, indentLevel);
-	if(dynamic_cast<const FloatParamDesc*>(&paramDesc))
-		return DebugPrintParam(printer, srcParam, paramName, (const FloatParamDesc&)paramDesc, indentLevel);
-	if(dynamic_cast<const StringParamDesc*>(&paramDesc))
-		return DebugPrintParam(printer, srcParam, paramName, (const StringParamDesc&)paramDesc, indentLevel);
-	if(dynamic_cast<const GameTimeParamDesc*>(&paramDesc))
-		return DebugPrintParam(printer, srcParam, paramName, (const GameTimeParamDesc&)paramDesc, indentLevel);
-	if(dynamic_cast<const Vec2ParamDesc*>(&paramDesc))
-		return DebugPrintParam(printer, srcParam, paramName, (const Vec2ParamDesc&)paramDesc, indentLevel);
-	if(dynamic_cast<const Vec3ParamDesc*>(&paramDesc))
-		return DebugPrintParam(printer, srcParam, paramName, (const Vec3ParamDesc&)paramDesc, indentLevel);
-	if(dynamic_cast<const Vec4ParamDesc*>(&paramDesc))
-		return DebugPrintParam(printer, srcParam, paramName, (const Vec4ParamDesc&)paramDesc, indentLevel);
-	if(dynamic_cast<const StructParamDesc*>(&paramDesc))
-		return DebugPrintParam(printer, srcParam, paramName, (const StructParamDesc&)paramDesc, indentLevel);
-	if(dynamic_cast<const FixedSizeArrayParamDesc*>(&paramDesc))
-		return DebugPrintParam(printer, srcParam, paramName, (const FixedSizeArrayParamDesc&)paramDesc, indentLevel);
+	if(typeid(BoolParamDesc) == typeid(paramDesc) ||
+		typeid(UintParamDesc) == typeid(paramDesc) ||
+		typeid(FloatParamDesc) == typeid(paramDesc) ||
+		typeid(StringParamDesc) == typeid(paramDesc) ||
+		typeid(GameTimeParamDesc) == typeid(paramDesc) ||
+		typeid(Vec2ParamDesc) == typeid(paramDesc) ||
+		typeid(Vec3ParamDesc) == typeid(paramDesc) ||
+		typeid(Vec4ParamDesc) == typeid(paramDesc))
+		DebugPrintParamDefault(printer, srcParam, paramName, paramDesc, indentLevel);
+	else if(typeid(StructParamDesc) == typeid(paramDesc))
+		DebugPrintStructParam(printer, srcParam, paramName, (const StructParamDesc&)paramDesc, indentLevel);
+	else if(typeid(FixedSizeArrayParamDesc) == typeid(paramDesc))
+		DebugPrintFixedSizeArrayParam(printer, srcParam, paramName, (const FixedSizeArrayParamDesc&)paramDesc, indentLevel);
 	// ADD NEW PARAMETER TYPES HERE.
-
-	assert(!"Unsupported parameter type.");
+	else
+		assert(!"Unsupported parameter type.");
 }
 
 void DebugPrintObj(IPrinter& printer, const void* srcObj, const StructDesc& structDesc, uint32_t indentLevel)

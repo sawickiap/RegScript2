@@ -76,25 +76,25 @@ void SaveParamToTokDoc(common::tokdoc::Node& dstNode, const void* srcParam, cons
 
 void SaveParamToTokDoc(common::tokdoc::Node& dstNode, const void* srcParam, const ParamDesc& paramDesc)
 {
-	if(dynamic_cast<const BoolParamDesc*>(&paramDesc))
+	if(typeid(BoolParamDesc) == typeid(paramDesc))
 		return SaveParamToTokDoc(dstNode, srcParam, (const BoolParamDesc&)paramDesc);
-	if(dynamic_cast<const UintParamDesc*>(&paramDesc))
+	if(typeid(UintParamDesc) == typeid(paramDesc))
 		return SaveParamToTokDoc(dstNode, srcParam, (const UintParamDesc&)paramDesc);
-	if(dynamic_cast<const FloatParamDesc*>(&paramDesc))
+	if(typeid(FloatParamDesc) == typeid(paramDesc))
 		return SaveParamToTokDoc(dstNode, srcParam, (const FloatParamDesc&)paramDesc);
-	if(dynamic_cast<const StringParamDesc*>(&paramDesc))
+	if(typeid(StringParamDesc) == typeid(paramDesc))
 		return SaveParamToTokDoc(dstNode, srcParam, (const StringParamDesc&)paramDesc);
-	if(dynamic_cast<const GameTimeParamDesc*>(&paramDesc))
+	if(typeid(GameTimeParamDesc) == typeid(paramDesc))
 		return SaveParamToTokDoc(dstNode, srcParam, (const GameTimeParamDesc&)paramDesc);
-	if(dynamic_cast<const Vec2ParamDesc*>(&paramDesc))
+	if(typeid(Vec2ParamDesc) == typeid(paramDesc))
 		return SaveParamToTokDoc(dstNode, srcParam, (const Vec2ParamDesc&)paramDesc);
-	if(dynamic_cast<const Vec3ParamDesc*>(&paramDesc))
+	if(typeid(Vec3ParamDesc) == typeid(paramDesc))
 		return SaveParamToTokDoc(dstNode, srcParam, (const Vec3ParamDesc&)paramDesc);
-	if(dynamic_cast<const Vec4ParamDesc*>(&paramDesc))
+	if(typeid(Vec4ParamDesc) == typeid(paramDesc))
 		return SaveParamToTokDoc(dstNode, srcParam, (const Vec4ParamDesc&)paramDesc);
-	if(dynamic_cast<const StructParamDesc*>(&paramDesc))
+	if(typeid(StructParamDesc) == typeid(paramDesc))
 		return SaveParamToTokDoc(dstNode, srcParam, (const StructParamDesc&)paramDesc);
-	if(dynamic_cast<const FixedSizeArrayParamDesc*>(&paramDesc))
+	if(typeid(FixedSizeArrayParamDesc) == typeid(paramDesc))
 		return SaveParamToTokDoc(dstNode, srcParam, (const FixedSizeArrayParamDesc&)paramDesc);
 	// ADD NEW PARAMETER TYPES HERE.
 
@@ -304,25 +304,25 @@ bool LoadParamFromTokDoc(void* dstParam, const FixedSizeArrayParamDesc& paramDes
 
 bool LoadParamFromTokDoc(void* dstParam, const ParamDesc& paramDesc, const common::tokdoc::Node& srcNode, const STokDocLoadConfig& config)
 {
-	if(dynamic_cast<const BoolParamDesc*>(&paramDesc))
+	if(typeid(BoolParamDesc) == typeid(paramDesc))
 		return LoadParamFromTokDoc(dstParam, (const BoolParamDesc&)paramDesc, srcNode, config);
-	if(dynamic_cast<const UintParamDesc*>(&paramDesc))
+	if(typeid(UintParamDesc) == typeid(paramDesc))
 		return LoadParamFromTokDoc(dstParam, (const UintParamDesc&)paramDesc, srcNode, config);
-	if(dynamic_cast<const FloatParamDesc*>(&paramDesc))
+	if(typeid(FloatParamDesc) == typeid(paramDesc))
 		return LoadParamFromTokDoc(dstParam, (const FloatParamDesc&)paramDesc, srcNode, config);
-	if(dynamic_cast<const StringParamDesc*>(&paramDesc))
+	if(typeid(StringParamDesc) == typeid(paramDesc))
 		return LoadParamFromTokDoc(dstParam, (const StringParamDesc&)paramDesc, srcNode, config);
-	if(dynamic_cast<const GameTimeParamDesc*>(&paramDesc))
+	if(typeid(GameTimeParamDesc) == typeid(paramDesc))
 		return LoadParamFromTokDoc(dstParam, (const GameTimeParamDesc&)paramDesc, srcNode, config);
-	if(dynamic_cast<const Vec2ParamDesc*>(&paramDesc))
+	if(typeid(Vec2ParamDesc) == typeid(paramDesc))
 		return LoadParamFromTokDoc(dstParam, (const Vec2ParamDesc&)paramDesc, srcNode, config);
-	if(dynamic_cast<const Vec3ParamDesc*>(&paramDesc))
+	if(typeid(Vec3ParamDesc) == typeid(paramDesc))
 		return LoadParamFromTokDoc(dstParam, (const Vec3ParamDesc&)paramDesc, srcNode, config);
-	if(dynamic_cast<const Vec4ParamDesc*>(&paramDesc))
+	if(typeid(Vec4ParamDesc) == typeid(paramDesc))
 		return LoadParamFromTokDoc(dstParam, (const Vec4ParamDesc&)paramDesc, srcNode, config);
-	if(dynamic_cast<const StructParamDesc*>(&paramDesc))
+	if(typeid(StructParamDesc) == typeid(paramDesc))
 		return LoadParamFromTokDoc(dstParam, (const StructParamDesc&)paramDesc, srcNode, config);
-	if(dynamic_cast<const FixedSizeArrayParamDesc*>(&paramDesc))
+	if(typeid(FixedSizeArrayParamDesc) == typeid(paramDesc))
 		return LoadParamFromTokDoc(dstParam, (const FixedSizeArrayParamDesc&)paramDesc, srcNode, config);
 	// ADD NEW PARAMETER TYPES HERE.
 	

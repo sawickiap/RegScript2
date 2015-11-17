@@ -130,6 +130,10 @@ public:
 	virtual size_t GetParamSize() const = 0;
 	virtual void SetToDefault(void* param) const = 0;
 	virtual void Copy(void* dstParam, const void* srcParam) const = 0;
+	// If not supported, returns false.
+	virtual bool ToString(wstring& out, const void* srcParam) const { out.clear(); return false; }
+	// If not supported or parse error, returns false and leaves value undefined.
+	virtual bool Parse(void* dstParam, const wchar_t* src) const { return false; }
 };
 
 class StructParamDesc : public ParamDesc
@@ -199,6 +203,9 @@ public:
 	{
 		((Param_t*)dstParam)->Value = ((Param_t*)srcParam)->Value;
 	}
+
+	virtual bool ToString(wstring& out, const void* srcParam) const;
+	virtual bool Parse(void* dstParam, const wchar_t* src) const;
 };
 
 class UintParamDesc : public TypedParamDesc<uint32_t>
@@ -228,6 +235,9 @@ public:
 	{
 		((Param_t*)dstParam)->Value = ((Param_t*)srcParam)->Value;
 	}
+
+	virtual bool ToString(wstring& out, const void* srcParam) const;
+	virtual bool Parse(void* dstParam, const wchar_t* src) const;
 };
 
 class FloatParamDesc : public TypedParamDesc<float>
@@ -258,6 +268,9 @@ public:
 	{
 		((Param_t*)dstParam)->Value = ((Param_t*)srcParam)->Value;
 	}
+
+	virtual bool ToString(wstring& out, const void* srcParam) const;
+	virtual bool Parse(void* dstParam, const wchar_t* src) const;
 };
 
 class StringParamDesc : public TypedParamDesc<std::wstring>
@@ -276,6 +289,9 @@ public:
 	{
 		((Param_t*)dstParam)->Value = ((Param_t*)srcParam)->Value;
 	}
+
+	virtual bool ToString(wstring& out, const void* srcParam) const;
+	virtual bool Parse(void* dstParam, const wchar_t* src) const;
 };
 
 class GameTimeParamDesc : public TypedParamDesc<common::GameTime>
@@ -294,6 +310,9 @@ public:
 	{
 		((Param_t*)dstParam)->Value = ((Param_t*)srcParam)->Value;
 	}
+
+	virtual bool ToString(wstring& out, const void* srcParam) const;
+	virtual bool Parse(void* dstParam, const wchar_t* src) const;
 };
 
 class Vec2ParamDesc : public TypedParamDesc<common::VEC2>
@@ -312,6 +331,9 @@ public:
 	{
 		((Param_t*)dstParam)->Value = ((Param_t*)srcParam)->Value;
 	}
+
+	virtual bool ToString(wstring& out, const void* srcParam) const;
+	virtual bool Parse(void* dstParam, const wchar_t* src) const;
 };
 
 class Vec3ParamDesc : public TypedParamDesc<common::VEC3>
@@ -330,6 +352,9 @@ public:
 	{
 		((Param_t*)dstParam)->Value = ((Param_t*)srcParam)->Value;
 	}
+
+	virtual bool ToString(wstring& out, const void* srcParam) const;
+	virtual bool Parse(void* dstParam, const wchar_t* src) const;
 };
 
 class Vec4ParamDesc : public TypedParamDesc<common::VEC4>
@@ -348,6 +373,9 @@ public:
 	{
 		((Param_t*)dstParam)->Value = ((Param_t*)srcParam)->Value;
 	}
+
+	virtual bool ToString(wstring& out, const void* srcParam) const;
+	virtual bool Parse(void* dstParam, const wchar_t* src) const;
 };
 
 class StructDesc
@@ -383,6 +411,11 @@ public:
 
 	void SetObjToDefault(void* obj) const;
 	void CopyObj(void* dstObj, const void* srcObj) const;
+
+	// Returns index. Not found: returns -1.
+	size_t Find(const wchar_t* name) const;
+	ParamDesc* GetParamDesc(size_t index);
+	const ParamDesc* GetParamDesc(size_t index) const;
 
 private:
 	std::wstring m_Name;

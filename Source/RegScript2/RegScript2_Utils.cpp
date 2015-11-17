@@ -127,3 +127,92 @@ void SecondsToFriendlyStr(std::wstring& out, double seconds)
 	if(negative)
 		out.insert(0, L"-");
 }
+
+bool FriendlyStrToSeconds(double& outSeconds, const wchar_t *str)
+{
+	size_t strLen = wcslen(str);
+	if(strLen == 0)
+		return false;
+
+	bool negative = str[0] == L'-';
+	if(negative)
+	{
+		++str;
+		--strLen;
+	}
+
+	bool ok = true;
+	// "m:s" or "h:m:s"
+	const wchar_t* firstColon = wcschr(str, L':');
+	if(firstColon != nullptr)
+	{
+		const wchar_t* secondColon = wcschr(firstColon + 1, L':');
+		// "h:m:s"
+		if(secondColon != nullptr)
+		{
+			wstring newStr{str, firstColon};
+			uint32_t hours = 0;
+			ok = common::StrToUint(&hours, newStr) == 0;
+			if(ok)
+			{		
+				newStr = wstring{firstColon + 1, secondColon};
+				uint32_t minutes = 0;
+				ok = common::StrToUint(&minutes, newStr) == 0;
+				if(ok)
+				{
+					newStr = secondColon + 1;
+					ok = common::StrToDouble(&outSeconds, newStr) == 0;
+					if(ok)
+						outSeconds += ((double)minutes + (double)hours * 60.) * 60.;
+				}
+			}
+		}
+		// "m:s"
+		else
+		{
+			wstring newStr{str, firstColon};
+			uint32_t minutes = 0;
+			ok = common::StrToUint(&minutes, newStr) == 0;
+			if(ok)
+			{
+				newStr = firstColon + 1;
+				ok = common::StrToDouble(&outSeconds, newStr) == 0;
+				if(ok)
+					outSeconds += (double)minutes * 60.;
+			}
+		}
+	}
+	else if(common::StrEnds(str, L"ns", true))
+	{
+		wstring newStr{str, str + (strLen - 2)};
+		ok = common::StrToDouble(&outSeconds, newStr) == 0;
+		if(ok)
+			outSeconds *= 1e-9;
+	}
+	else if(common::StrEnds(str, L"us", true))
+	{
+		wstring newStr{str, str + (strLen - 2)};
+		ok = common::StrToDouble(&outSeconds, newStr) == 0;
+		if(ok)
+			outSeconds *= 1e-6;
+	}
+	else if(common::StrEnds(str, L"ms", true))
+	{
+		wstring newStr{str, str + (strLen - 2)};
+		ok = common::StrToDouble(&outSeconds, newStr) == 0;
+		if(ok)
+			outSeconds *= 1e-3;
+	}
+	else if(common::StrEnds(str, L"s", true))
+	{
+		wstring newStr{str, str + (strLen - 1)};
+		ok = common::StrToDouble(&outSeconds, newStr) == 0;
+	}
+	// No unit: default is seconds.
+	else
+		ok = common::StrToDouble(&outSeconds, str) == 0;
+
+	if(ok && negative)
+		outSeconds = -outSeconds;
+	return ok;
+}
