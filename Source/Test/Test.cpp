@@ -1307,6 +1307,56 @@ TEST(FindObjParamByPath, FixedSizeArray)
 	EXPECT_EQ(123, uintParam->Value);
 }
 
+TEST(FindObjParamByPath, Negative)
+{
+	unique_ptr<rs2::StructDesc> simpleStructDesc = SimpleStruct::CreateStructDesc();
+	unique_ptr<rs2::StructDesc> containerStructDesc = ContainerStruct::CreateStructDesc(simpleStructDesc.get());
+	ContainerStruct s;
+
+	void* param = nullptr;
+	const rs2::ParamDesc* paramDesc = nullptr;
+	EXPECT_FALSE( rs2::FindObjParamByPath(
+		param, paramDesc,
+		&s, *containerStructDesc,
+		L"NonExistingParam") );
+	EXPECT_FALSE( rs2::FindObjParamByPath(
+		param, paramDesc,
+		&s, *containerStructDesc,
+		L"StructParam\\") );
+	EXPECT_FALSE( rs2::FindObjParamByPath(
+		param, paramDesc,
+		&s, *containerStructDesc,
+		L"\\StructParam") );
+	EXPECT_FALSE( rs2::FindObjParamByPath(
+		param, paramDesc,
+		&s, *containerStructDesc,
+		L"FixedSizeArrayParam[1000000]") );
+	EXPECT_FALSE( rs2::FindObjParamByPath(
+		param, paramDesc,
+		&s, *containerStructDesc,
+		L"StructParam\\NonExistingParam") );
+	EXPECT_FALSE( rs2::FindObjParamByPath(
+		param, paramDesc,
+		&s, *containerStructDesc,
+		L"FixedSizeArrayParam[1") );
+	EXPECT_FALSE( rs2::FindObjParamByPath(
+		param, paramDesc,
+		&s, *containerStructDesc,
+		L"FixedSizeArrayParam[1][0]") );
+	EXPECT_FALSE( rs2::FindObjParamByPath(
+		param, paramDesc,
+		&s, *containerStructDesc,
+		L"FixedSizeArrayParam[1]\\") );
+	EXPECT_FALSE( rs2::FindObjParamByPath(
+		param, paramDesc,
+		&s, *containerStructDesc,
+		L"FixedSizeArrayParam[1]\\NoParam") );
+	EXPECT_FALSE( rs2::FindObjParamByPath(
+		param, paramDesc,
+		&s, *containerStructDesc,
+		L"StructParam\\NonExistingParam") );
+}
+
 int wmain(int argc, wchar_t** argv)
 {
 	::testing::AddGlobalTestEnvironment(new Environment());
