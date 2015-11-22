@@ -216,3 +216,11 @@ bool FriendlyStrToSeconds(double& outSeconds, const wchar_t *str)
 		outSeconds = -outSeconds;
 	return ok;
 }
+
+const common::VEC2 VEC2_MIN = common::VEC2(-FLT_MAX, -FLT_MAX);
+const common::VEC3 VEC3_MIN = common::VEC3(-FLT_MAX, -FLT_MAX, -FLT_MAX);
+const common::VEC4 VEC4_MIN = common::VEC4(-FLT_MAX, -FLT_MAX, -FLT_MAX, -FLT_MAX);
+
+const common::VEC2 VEC2_MAX = common::VEC2(FLT_MAX, FLT_MAX);
+const common::VEC3 VEC3_MAX = common::VEC3(FLT_MAX, FLT_MAX, FLT_MAX);
+const common::VEC4 VEC4_MAX = common::VEC4(FLT_MAX, FLT_MAX, FLT_MAX, FLT_MAX);

@@ -71,3 +71,13 @@ inline float DBToPower(float db)
 inline void Replicate(common::VEC2 &out, float value) { out.x = out.y = value; }
 inline void Replicate(common::VEC3 &out, float value) { out.x = out.y = out.z = value; }
 inline void Replicate(common::VEC4 &out, float value) { out.x = out.y = out.z = out.w = value; }
+
+// Replicated -FLT_MAX.
+extern const common::VEC2 VEC2_MIN;
+extern const common::VEC3 VEC3_MIN;
+extern const common::VEC4 VEC4_MIN;
+
+// Replicated FLT_MAX.
+extern const common::VEC2 VEC2_MAX;
+extern const common::VEC3 VEC3_MAX;
+extern const common::VEC4 VEC4_MAX;

@@ -1151,6 +1151,22 @@ bool VecParamDesc<Vec_t>::Parse(void* dstParam, const wchar_t* src) const
 		return false;
 }
 
+template<typename Vec_t>
+Vec_t VecParamDesc<Vec_t>::DefaultMinValue()
+{
+	Vec_t v;
+	Replicate(v, -FLT_MAX);
+	return v;
+}
+
+template<typename Vec_t>
+Vec_t VecParamDesc<Vec_t>::DefaultMaxValue()
+{
+	Vec_t v;
+	Replicate(v, FLT_MAX);
+	return v;
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // Globals
 

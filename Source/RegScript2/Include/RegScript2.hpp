@@ -195,7 +195,7 @@ public:
 
 	uint32_t Flags;
 
-	ParamDesc(STORAGE storage) : Flags(0), m_Storage(storage) { }
+	ParamDesc(STORAGE storage, uint32_t flags) : Flags(flags), m_Storage(storage) { }
 	virtual ~ParamDesc() { }
 
 	STORAGE GetStorage() const { return m_Storage; }
@@ -226,7 +226,7 @@ class StructParamDesc : public ParamDesc
 {
 public:
 	StructParamDesc(const StructDesc* structDesc) :
-		ParamDesc(STORAGE::RAW),
+		ParamDesc(STORAGE::RAW, 0),
 		m_StructDesc(structDesc)
 	{
 		assert(structDesc != nullptr);
@@ -249,7 +249,7 @@ class FixedSizeArrayParamDesc : public ParamDesc
 public:
 	// Takes ownership of elementParamDesc.
 	FixedSizeArrayParamDesc(const ParamDesc* elementParamDesc, size_t count) :
-		ParamDesc(STORAGE::RAW),
+		ParamDesc(STORAGE::RAW, 0),
 		m_ElementParamDesc(elementParamDesc), m_Count(count)
 	{
 		assert(elementParamDesc != nullptr);
@@ -281,9 +281,9 @@ class TypedParamDesc : public ParamDesc
 public:
 	Value_t DefaultValue;
 
-	TypedParamDesc(STORAGE storage) :
-		ParamDesc(storage),
-		DefaultValue()
+	TypedParamDesc(STORAGE storage, const Value_t& defaultValue, uint32_t flags) :
+		ParamDesc(storage, flags),
+		DefaultValue(defaultValue)
 	{
 	}
 
@@ -301,12 +301,16 @@ public:
 	GetFunc_t GetFunc;
 	SetFunc_t SetFunc;
 
-	BoolParamDesc(STORAGE storage) :
-		TypedParamDesc<bool>(storage)
+	BoolParamDesc(STORAGE storage, Value_t defaultValue = Value_t(), uint32_t flags = 0) :
+		TypedParamDesc<bool>(storage, defaultValue, flags)
 	{
 	}
-
-	BoolParamDesc& SetDefault(Value_t defaultValue) { DefaultValue = defaultValue; return *this; }
+	BoolParamDesc(GetFunc_t getFunc, SetFunc_t setFunc, Value_t defaultValue = Value_t(), uint32_t flags = 0) :
+		TypedParamDesc<bool>(STORAGE::FUNCTION, defaultValue, flags),
+		GetFunc(getFunc),
+		SetFunc(setFunc)
+	{
+	}
 
 	virtual size_t GetParamSize() const;
 
@@ -351,15 +355,36 @@ public:
 
 	Value_t MinValue, MaxValue;
 
-	UintParamDesc(STORAGE storage) :
-		TypedParamDesc<uint32_t>(storage),
-		Format(FORMAT_DEC),
-		MinValue(0),
-		MaxValue(UINT_MAX)
+	UintParamDesc(
+		STORAGE storage,
+		Value_t defaultValue = Value_t(),
+		uint32_t flags = 0,
+		FORMAT format = FORMAT_DEC,
+		Value_t minValue = 0,
+		Value_t maxValue = UINT_MAX) :
+		TypedParamDesc<uint32_t>(storage, defaultValue, flags),
+		Format(format),
+		MinValue(minValue),
+		MaxValue(maxValue)
+	{
+	}
+	UintParamDesc(
+		GetFunc_t getFunc,
+		SetFunc_t setFunc,
+		Value_t defaultValue = Value_t(),
+		uint32_t flags = 0,
+		FORMAT format = FORMAT_DEC,
+		Value_t minValue = 0,
+		Value_t maxValue = UINT_MAX) :
+		TypedParamDesc<uint32_t>(STORAGE::FUNCTION, defaultValue, flags),
+		GetFunc(getFunc),
+		SetFunc(setFunc),
+		Format(format),
+		MinValue(minValue),
+		MaxValue(maxValue)
 	{
 	}
 
-	UintParamDesc& SetDefault(Value_t defaultValue) { DefaultValue = defaultValue; return *this; }
 	UintParamDesc& SetFormat(FORMAT format) { Format = format; return *this; }
 	UintParamDesc& SetMinMax(Value_t min, Value_t max) { MinValue = min; MaxValue = max; return *this; }
 
@@ -411,15 +436,36 @@ public:
 	// When min-max values are active, non-finite values are also not accepted.
 	Value_t MinValue, MaxValue;
 
-	FloatParamDesc(STORAGE storage) :
-		TypedParamDesc<float>(storage),
-		Format(FORMAT_NORMAL),
-		MinValue(-FLT_MAX),
-		MaxValue(FLT_MAX)
+	FloatParamDesc(
+		STORAGE storage,
+		Value_t defaultValue = Value_t(),
+		uint32_t flags = 0,
+		FORMAT format = FORMAT_NORMAL,
+		Value_t minValue = -FLT_MAX,
+		Value_t maxValue = FLT_MAX) :
+		TypedParamDesc<float>(storage, defaultValue, flags),
+		Format(format),
+		MinValue(minValue),
+		MaxValue(maxValue)
+	{
+	}
+	FloatParamDesc(
+		GetFunc_t getFunc,
+		SetFunc_t setFunc,
+		Value_t defaultValue = Value_t(),
+		uint32_t flags = 0,
+		FORMAT format = FORMAT_NORMAL,
+		Value_t minValue = -FLT_MAX,
+		Value_t maxValue = FLT_MAX) :
+		TypedParamDesc<float>(STORAGE::FUNCTION, defaultValue, flags),
+		GetFunc(getFunc),
+		SetFunc(setFunc),
+		Format(format),
+		MinValue(minValue),
+		MaxValue(maxValue)
 	{
 	}
 
-	FloatParamDesc& SetDefault(Value_t defaultValue) { DefaultValue = defaultValue; return *this; }
 	FloatParamDesc& SetFormat(FORMAT format) { Format = format; return *this; }
 	FloatParamDesc& SetMinMax(Value_t min, Value_t max) { MinValue = min; MaxValue = max; return *this; }
 
@@ -458,12 +504,16 @@ public:
 	GetFunc_t GetFunc;
 	SetFunc_t SetFunc;
 
-	StringParamDesc(STORAGE storage) :
-		TypedParamDesc<std::wstring>(storage)
+	StringParamDesc(STORAGE storage, const Value_t& defaultValue = Value_t(), uint32_t flags = 0) :
+		TypedParamDesc<std::wstring>(storage, defaultValue, flags)
 	{
 	}
-
-	StringParamDesc& SetDefault(const wchar_t* defaultValue) { DefaultValue = defaultValue; return *this; }
+	StringParamDesc(GetFunc_t getFunc, SetFunc_t setFunc, const Value_t& defaultValue = Value_t(), uint32_t flags = 0) :
+		TypedParamDesc<std::wstring>(STORAGE::FUNCTION, defaultValue, flags),
+		GetFunc(getFunc),
+		SetFunc(setFunc)
+	{
+	}
 
 	virtual size_t GetParamSize() const;
 
@@ -501,14 +551,32 @@ public:
 
 	Value_t MinValue, MaxValue;
 
-	GameTimeParamDesc(STORAGE storage) :
-		TypedParamDesc<common::GameTime>(storage),
-		MinValue(common::GameTime::MIN_VALUE),
-		MaxValue(common::GameTime::MAX_VALUE)
+	GameTimeParamDesc(
+		STORAGE storage,
+		Value_t defaultValue = Value_t(),
+		uint32_t flags = 0,
+		Value_t minValue = common::GameTime::MIN_VALUE,
+		Value_t maxValue = common::GameTime::MAX_VALUE) :
+		TypedParamDesc<common::GameTime>(storage, defaultValue, flags),
+		MinValue(minValue),
+		MaxValue(maxValue)
+	{
+	}
+	GameTimeParamDesc(
+		GetFunc_t getFunc,
+		SetFunc_t setFunc,
+		Value_t defaultValue = Value_t(),
+		uint32_t flags = 0,
+		Value_t minValue = common::GameTime::MIN_VALUE,
+		Value_t maxValue = common::GameTime::MAX_VALUE) :
+		TypedParamDesc<common::GameTime>(STORAGE::FUNCTION, defaultValue, flags),
+		GetFunc(getFunc),
+		SetFunc(setFunc),
+		MinValue(minValue),
+		MaxValue(maxValue)
 	{
 	}
 
-	GameTimeParamDesc& SetDefault(const Value_t& defaultValue) { DefaultValue = defaultValue; return *this; }
 	GameTimeParamDesc& SetMinMax(Value_t min, Value_t max) { MinValue = min; MaxValue = max; return *this; }
 
 	virtual size_t GetParamSize() const;
@@ -549,14 +617,32 @@ public:
 
 	Value_t MinValue, MaxValue;
 
-	VecParamDesc(STORAGE storage) :
-		TypedParamDesc<Vec_t>(storage)
+	VecParamDesc(
+		STORAGE storage,
+		Value_t defaultValue = Value_t(),
+		uint32_t flags = 0,
+		Value_t minValue = DefaultMinValue(),
+		Value_t maxValue = DefaultMaxValue()) :
+		TypedParamDesc<Vec_t>(storage, defaultValue, flags),
+		MinValue(minValue),
+		MaxValue(maxValue)
 	{
-		Replicate(MinValue, -FLT_MAX);
-		Replicate(MaxValue,  FLT_MAX);
+	}
+	VecParamDesc(
+		GetFunc_t getFunc,
+		SetFunc_t setFunc,
+		Value_t defaultValue = Value_t(),
+		uint32_t flags = 0,
+		Value_t minValue = DefaultMinValue(),
+		Value_t maxValue = DefaultMaxValue()) :
+		TypedParamDesc<Vec_t>(STORAGE::FUNCTION, defaultValue, flags),
+		GetFunc(getFunc),
+		SetFunc(setFunc),
+		MinValue(minValue),
+		MaxValue(maxValue)
+	{
 	}
 
-	VecParamDesc<Vec_t>& SetDefault(const Value_t& defaultValue) { DefaultValue = defaultValue; return *this; }
 	VecParamDesc<Vec_t>& SetMinMax(const Value_t& min, const Value_t& max) { MinValue = min; MaxValue = max; return *this; }
 
 	virtual size_t GetParamSize() const;
@@ -581,6 +667,10 @@ public:
 	virtual void Copy(void* dstParam, const void* srcParam) const;
 	virtual bool ToString(std::wstring& out, const void* srcParam) const;
 	virtual bool Parse(void* dstParam, const wchar_t* src) const;
+
+private:
+	static Vec_t DefaultMinValue();
+	static Vec_t DefaultMaxValue();
 };
 
 typedef VecParamDesc<common::VEC2> Vec2ParamDesc;
@@ -599,12 +689,12 @@ public:
 	size_t GetStructSize() const { return m_StructSize; }
 	const StructDesc* GetBaseStructDesc() const { return m_BaseStructDesc; }
 
-	template<typename ParamDesc_t>
-	void AddParam(const wchar_t* name, size_t offset, const ParamDesc_t& param)
+	// Takes ownership of param.
+	void AddParam(const wchar_t* name, size_t offset, ParamDesc* param)
 	{
 		Names.push_back(name);
 		Offsets.push_back(offset);
-		Params.emplace_back(std::make_shared<ParamDesc_t>(param));
+		Params.emplace_back(std::shared_ptr<ParamDesc>(param));
 	}
 
 	char* AccessRawParam(void* obj, size_t paramIndex) const { return (char*)obj + Offsets[paramIndex]; }
