@@ -14,6 +14,7 @@
 
 #include <cassert>
 #include <cstdint>
+#include <cfloat>
 
 namespace RegScript2
 {
@@ -176,8 +177,13 @@ class ParamDesc
 public:
 	enum FLAGS
 	{
-		FLAG_READ_ONLY  = 0x01,
-		FLAG_WRITE_ONLY = 0x02,
+		FLAG_READ_ONLY           = 0x01,
+		FLAG_WRITE_ONLY          = 0x02,
+		// Clamping or checking min-max range affects all sets, gets, SetToDefault, ToString, Parse,
+		// but does not affect Copy.
+		FLAG_MINMAX_CLAMP_ON_GET = 0x04,
+		FLAG_MINMAX_CLAMP_ON_SET = 0x08,
+		FLAG_MINMAX_FAIL_ON_SET  = 0x10,
 	};
 
 	enum class STORAGE
@@ -343,16 +349,24 @@ public:
 	};
 	FORMAT Format;
 
+	Value_t MinValue, MaxValue;
+
 	UintParamDesc(STORAGE storage) :
 		TypedParamDesc<uint32_t>(storage),
-		Format(FORMAT_DEC)
+		Format(FORMAT_DEC),
+		MinValue(0),
+		MaxValue(UINT_MAX)
 	{
 	}
 
 	UintParamDesc& SetDefault(Value_t defaultValue) { DefaultValue = defaultValue; return *this; }
 	UintParamDesc& SetFormat(FORMAT format) { Format = format; return *this; }
+	UintParamDesc& SetMinMax(Value_t min, Value_t max) { MinValue = min; MaxValue = max; return *this; }
 
 	virtual size_t GetParamSize() const;
+
+	bool ValueInMinMax(Value_t value) const { return value <= MaxValue && value >= MinValue; }
+	void ClampValueToMinMax(Value_t& value) const { if(value < MinValue) value = MinValue; else if(value > MaxValue) value = MaxValue; }
 
 	Value_t* AccessAsRaw(void* param) const { assert(GetStorage() == STORAGE::RAW); return (Value_t*)param; }
 	const Value_t* AccessAsRaw(const void* param) const { assert(GetStorage() == STORAGE::RAW); return (const Value_t*)param; }
@@ -394,16 +408,25 @@ public:
 	};
 	FORMAT Format;
 
+	// When min-max values are active, non-finite values are also not accepted.
+	Value_t MinValue, MaxValue;
+
 	FloatParamDesc(STORAGE storage) :
 		TypedParamDesc<float>(storage),
-		Format(FORMAT_NORMAL)
+		Format(FORMAT_NORMAL),
+		MinValue(-FLT_MAX),
+		MaxValue(FLT_MAX)
 	{
 	}
 
 	FloatParamDesc& SetDefault(Value_t defaultValue) { DefaultValue = defaultValue; return *this; }
 	FloatParamDesc& SetFormat(FORMAT format) { Format = format; return *this; }
+	FloatParamDesc& SetMinMax(Value_t min, Value_t max) { MinValue = min; MaxValue = max; return *this; }
 
 	virtual size_t GetParamSize() const;
+
+	bool ValueInMinMax(Value_t value) const { return value <= MaxValue && value >= MinValue; }
+	void ClampValueToMinMax(Value_t& value) const { if(!(value >= MinValue)) value = MinValue; else if(!(value <= MaxValue)) value = MaxValue; }
 
 	Value_t* AccessAsRaw(void* param) const { assert(GetStorage() == STORAGE::RAW); return (Value_t*)param; }
 	const Value_t* AccessAsRaw(const void* param) const { assert(GetStorage() == STORAGE::RAW); return (const Value_t*)param; }
@@ -476,14 +499,22 @@ public:
 	GetFunc_t GetFunc;
 	SetFunc_t SetFunc;
 
+	Value_t MinValue, MaxValue;
+
 	GameTimeParamDesc(STORAGE storage) :
-		TypedParamDesc<common::GameTime>(storage)
+		TypedParamDesc<common::GameTime>(storage),
+		MinValue(common::GameTime::MIN_VALUE),
+		MaxValue(common::GameTime::MAX_VALUE)
 	{
 	}
 
 	GameTimeParamDesc& SetDefault(const Value_t& defaultValue) { DefaultValue = defaultValue; return *this; }
+	GameTimeParamDesc& SetMinMax(Value_t min, Value_t max) { MinValue = min; MaxValue = max; return *this; }
 
 	virtual size_t GetParamSize() const;
+
+	bool ValueInMinMax(Value_t value) const { return value <= MaxValue && value >= MinValue; }
+	void ClampValueToMinMax(Value_t& value) const { if(value < MinValue) value = MinValue; else if(value > MaxValue) value = MaxValue; }
 
 	Value_t* AccessAsRaw(void* param) const { assert(GetStorage() == STORAGE::RAW); return (Value_t*)param; }
 	const Value_t* AccessAsRaw(const void* param) const { assert(GetStorage() == STORAGE::RAW); return (const Value_t*)param; }
@@ -516,14 +547,22 @@ public:
 	GetFunc_t GetFunc;
 	SetFunc_t SetFunc;
 
+	Value_t MinValue, MaxValue;
+
 	VecParamDesc(STORAGE storage) :
 		TypedParamDesc<Vec_t>(storage)
 	{
+		Replicate(MinValue, -FLT_MAX);
+		Replicate(MaxValue,  FLT_MAX);
 	}
 
 	VecParamDesc<Vec_t>& SetDefault(const Value_t& defaultValue) { DefaultValue = defaultValue; return *this; }
+	VecParamDesc<Vec_t>& SetMinMax(const Value_t& min, const Value_t& max) { MinValue = min; MaxValue = max; return *this; }
 
 	virtual size_t GetParamSize() const;
+
+	bool ValueInMinMax(Value_t value) const;
+	void ClampValueToMinMax(Value_t& value) const;
 
 	Value_t* AccessAsRaw(void* param) const { assert(GetStorage() == STORAGE::RAW); return (Value_t*)param; }
 	const Value_t* AccessAsRaw(const void* param) const { assert(GetStorage() == STORAGE::RAW); return (const Value_t*)param; }
@@ -535,7 +574,7 @@ public:
 	virtual bool IsConst(const void* param) const;
 	bool TryGetConst(Value_t& outValue, const void* param) const;
 	void GetConst(Value_t& outValue, const void* param) const;
-	bool TrySetConst(void* param, const Value_t& value) const;
+	bool TrySetConst(void* param, Value_t value) const;
 	void SetConst(void* param, const Value_t& value) const;
 
 	virtual void SetToDefault(void* param) const { SetConst(param, DefaultValue); }

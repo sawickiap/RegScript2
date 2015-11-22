@@ -420,19 +420,25 @@ bool UintParamDesc::TryGetConst(Value_t& outValue, const void* param) const
 {
 	if(!CanRead())
 		return false;
+	bool ok = false;
 	switch(GetStorage())
 	{
 	case STORAGE::RAW:
 		outValue = *AccessAsRaw(param);
-		return true;
+		ok = true;
+		break;
 	case STORAGE::PARAM:
-		return AccessAsParam(param)->TryGetConst(outValue);
+		ok = AccessAsParam(param)->TryGetConst(outValue);
+		break;
 	case STORAGE::FUNCTION:
-		return GetFunc(outValue, param);
+		ok = GetFunc(outValue, param);
+		break;
 	default:
 		assert(0);
-		return false;
 	}
+	if(ok && (Flags & FLAG_MINMAX_CLAMP_ON_GET))
+		ClampValueToMinMax(outValue);
+	return ok;
 }
 
 UintParamDesc::Value_t UintParamDesc::GetConst(const void* param) const
@@ -448,6 +454,10 @@ bool UintParamDesc::TrySetConst(void* param, Value_t value) const
 {
 	if(!CanWrite())
 		return false;
+	if((Flags & FLAG_MINMAX_FAIL_ON_SET) && !ValueInMinMax(value))
+		return false;
+	else if(Flags & FLAG_MINMAX_CLAMP_ON_SET)
+		ClampValueToMinMax(value);
 	switch(GetStorage())
 	{
 	case STORAGE::RAW:
@@ -564,19 +574,25 @@ bool FloatParamDesc::TryGetConst(Value_t& outValue, const void* param) const
 {
 	if(!CanRead())
 		return false;
+	bool ok = false;
 	switch(GetStorage())
 	{
 	case STORAGE::RAW:
 		outValue = *AccessAsRaw(param);
-		return true;
+		ok = true;
+		break;
 	case STORAGE::PARAM:
-		return AccessAsParam(param)->TryGetConst(outValue);
+		ok = AccessAsParam(param)->TryGetConst(outValue);
+		break;
 	case STORAGE::FUNCTION:
-		return GetFunc(outValue, param);
+		ok = GetFunc(outValue, param);
+		break;
 	default:
 		assert(0);
-		return false;
 	}
+	if(ok && (Flags & FLAG_MINMAX_CLAMP_ON_GET))
+		ClampValueToMinMax(outValue);
+	return ok;
 }
 
 FloatParamDesc::Value_t FloatParamDesc::GetConst(const void* param) const
@@ -592,6 +608,10 @@ bool FloatParamDesc::TrySetConst(void* param, Value_t value) const
 {
 	if(!CanWrite())
 		return false;
+	if((Flags & FLAG_MINMAX_FAIL_ON_SET) && !ValueInMinMax(value))
+		return false;
+	else if(Flags & FLAG_MINMAX_CLAMP_ON_SET)
+		ClampValueToMinMax(value);
 	switch(GetStorage())
 	{
 	case STORAGE::RAW:
@@ -856,19 +876,25 @@ bool GameTimeParamDesc::TryGetConst(Value_t& outValue, const void* param) const
 {
 	if(!CanRead())
 		return false;
+	bool ok = false;
 	switch(GetStorage())
 	{
 	case STORAGE::RAW:
 		outValue = *AccessAsRaw(param);
-		return true;
+		ok = true;
+		break;
 	case STORAGE::PARAM:
-		return AccessAsParam(param)->TryGetConst(outValue);
+		ok = AccessAsParam(param)->TryGetConst(outValue);
+		break;
 	case STORAGE::FUNCTION:
-		return GetFunc(outValue, param);
+		ok = GetFunc(outValue, param);
+		break;
 	default:
 		assert(0);
-		return false;
 	}
+	if(ok && (Flags & FLAG_MINMAX_CLAMP_ON_GET))
+		ClampValueToMinMax(outValue);
+	return ok;
 }
 
 GameTimeParamDesc::Value_t GameTimeParamDesc::GetConst(const void* param) const
@@ -884,6 +910,10 @@ bool GameTimeParamDesc::TrySetConst(void* param, Value_t value) const
 {
 	if(!CanWrite())
 		return false;
+	if((Flags & FLAG_MINMAX_FAIL_ON_SET) && !ValueInMinMax(value))
+		return false;
+	else if(Flags & FLAG_MINMAX_CLAMP_ON_SET)
+		ClampValueToMinMax(value);
 	switch(GetStorage())
 	{
 	case STORAGE::RAW:
@@ -973,6 +1003,20 @@ size_t VecParamDesc<Vec_t>::GetParamSize() const
 }
 
 template<typename Vec_t>
+bool VecParamDesc<Vec_t>::ValueInMinMax(Value_t value) const
+{
+	return common::AllGreaterEqual(value, MinValue) &&
+		common::AllLessEqual(value, MaxValue);
+}
+
+template<typename Vec_t>
+void VecParamDesc<Vec_t>::ClampValueToMinMax(Value_t& value) const
+{
+	common::Max(&value, value, MinValue);
+	common::Min(&value, value, MaxValue);
+}
+
+template<typename Vec_t>
 bool VecParamDesc<Vec_t>::IsConst(const void* param) const
 {
 	if(!CanRead())
@@ -994,19 +1038,25 @@ bool VecParamDesc<Vec_t>::TryGetConst(Value_t& outValue, const void* param) cons
 {
 	if(!CanRead())
 		return false;
+	bool ok = false;
 	switch(GetStorage())
 	{
 	case STORAGE::RAW:
 		outValue = *AccessAsRaw(param);
-		return true;
+		ok = true;
+		break;
 	case STORAGE::PARAM:
-		return AccessAsParam(param)->TryGetConst(outValue);
+		ok = AccessAsParam(param)->TryGetConst(outValue);
+		break;
 	case STORAGE::FUNCTION:
-		return GetFunc(outValue, param);
+		ok = GetFunc(outValue, param);
+		break;
 	default:
 		assert(0);
-		return false;
 	}
+	if(ok && (Flags & FLAG_MINMAX_CLAMP_ON_GET))
+		ClampValueToMinMax(outValue);
+	return ok;
 }
 
 template<typename Vec_t>
@@ -1017,10 +1067,14 @@ void VecParamDesc<Vec_t>::GetConst(Value_t& outValue, const void* param) const
 }
 
 template<typename Vec_t>
-bool VecParamDesc<Vec_t>::TrySetConst(void* param, const Value_t& value) const
+bool VecParamDesc<Vec_t>::TrySetConst(void* param, Value_t value) const
 {
 	if(!CanWrite())
 		return false;
+	if((Flags & FLAG_MINMAX_FAIL_ON_SET) && !ValueInMinMax(value))
+		return false;
+	else if(Flags & FLAG_MINMAX_CLAMP_ON_SET)
+		ClampValueToMinMax(value);
 	switch(GetStorage())
 	{
 	case STORAGE::RAW:

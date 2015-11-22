@@ -1425,11 +1425,11 @@ unique_ptr<rs2::StructDesc> RawValuesStruct::CreateStructDesc(uint32_t additiona
 	structDesc->AddParam(
 		L"UintValue",
 		offsetof(RawValuesStruct, UintValue),
-		rs2::UintParamDesc(rs2::ParamDesc::STORAGE::RAW).SetDefault(123));
+		rs2::UintParamDesc(rs2::ParamDesc::STORAGE::RAW).SetDefault(123).SetMinMax(100, 200));
 	structDesc->AddParam(
 		L"FloatValue",
 		offsetof(RawValuesStruct, FloatValue),
-		rs2::FloatParamDesc(rs2::ParamDesc::STORAGE::RAW).SetDefault(3.14f));
+		rs2::FloatParamDesc(rs2::ParamDesc::STORAGE::RAW).SetDefault(3.14f).SetMinMax(100.f, 200.f));
 	structDesc->AddParam(
 		L"StringValue",
 		offsetof(RawValuesStruct, StringValue),
@@ -1437,19 +1437,23 @@ unique_ptr<rs2::StructDesc> RawValuesStruct::CreateStructDesc(uint32_t additiona
 	structDesc->AddParam(
 		L"GameTimeValue",
 		offsetof(RawValuesStruct, GameTimeValue),
-		rs2::GameTimeParamDesc(rs2::ParamDesc::STORAGE::RAW).SetDefault(common::MillisecondsToGameTime(1023)));
+		rs2::GameTimeParamDesc(rs2::ParamDesc::STORAGE::RAW).SetDefault(common::MillisecondsToGameTime(1023)).SetMinMax(
+			common::SecondsToGameTime(100.), common::SecondsToGameTime(200.)));
 	structDesc->AddParam(
 		L"Vec2Value",
 		offsetof(RawValuesStruct, Vec2Value),
-		rs2::Vec2ParamDesc(rs2::ParamDesc::STORAGE::RAW).SetDefault(VEC2(1.f, 2.f)));
+		rs2::Vec2ParamDesc(rs2::ParamDesc::STORAGE::RAW).SetDefault(VEC2(1.f, 2.f)).SetMinMax(
+			VEC2(100.f, 100.f), VEC2(200.f, 200.f)));
 	structDesc->AddParam(
 		L"Vec3Value",
 		offsetof(RawValuesStruct, Vec3Value),
-		rs2::Vec3ParamDesc(rs2::ParamDesc::STORAGE::RAW).SetDefault(VEC3(1.f, 2.f, 3.f)));
+		rs2::Vec3ParamDesc(rs2::ParamDesc::STORAGE::RAW).SetDefault(VEC3(1.f, 2.f, 3.f)).SetMinMax(
+			VEC3(100.f, 100.f, 100.f), VEC3(200.f, 200.f, 200.f)));
 	structDesc->AddParam(
 		L"Vec4Value",
 		offsetof(RawValuesStruct, Vec4Value),
-		rs2::Vec4ParamDesc(rs2::ParamDesc::STORAGE::RAW).SetDefault(VEC4(1.f, 2.f, 3.f, 4.f)));
+		rs2::Vec4ParamDesc(rs2::ParamDesc::STORAGE::RAW).SetDefault(VEC4(1.f, 2.f, 3.f, 4.f)).SetMinMax(
+			VEC4(100.f, 100.f, 100.f, 100.f), VEC4(200.f, 200.f, 200.f, 200.f)));
 
 	for(auto paramPtr : structDesc->Params)
 		paramPtr->Flags |= additionalFlags;
@@ -1602,6 +1606,121 @@ TEST(RawValues, Copy)
 	EXPECT_EQ(VEC2(1.f, 2.f), obj2.Vec2Value);
 	EXPECT_EQ(VEC3(1.f, 2.f, 3.f), obj2.Vec3Value);
 	EXPECT_EQ(VEC4(1.f, 2.f, 3.f, 4.f), obj2.Vec4Value);
+}
+
+TEST(RawValues, MinMaxClampOnSet)
+{
+	unique_ptr<rs2::StructDesc> rawValuesStructDesc = RawValuesStruct::CreateStructDesc(
+		rs2::ParamDesc::FLAG_MINMAX_CLAMP_ON_SET);
+	RawValuesStruct obj;
+
+	const rs2::UintParamDesc* uintParamDesc = (const rs2::UintParamDesc*)rawValuesStructDesc->Params[1].get();
+	const rs2::FloatParamDesc* floatParamDesc = (const rs2::FloatParamDesc*)rawValuesStructDesc->Params[2].get();
+	const rs2::GameTimeParamDesc* gameTimeParamDesc = (const rs2::GameTimeParamDesc*)rawValuesStructDesc->Params[4].get();
+	const rs2::Vec2ParamDesc* vec2ParamDesc = (const rs2::Vec2ParamDesc*)rawValuesStructDesc->Params[5].get();
+	const rs2::Vec3ParamDesc* vec3ParamDesc = (const rs2::Vec3ParamDesc*)rawValuesStructDesc->Params[6].get();
+	const rs2::Vec4ParamDesc* vec4ParamDesc = (const rs2::Vec4ParamDesc*)rawValuesStructDesc->Params[7].get();
+
+	uintParamDesc->SetConst(&obj.UintValue, 10);
+	floatParamDesc->SetConst(&obj.FloatValue, 10.f);
+	gameTimeParamDesc->SetConst(&obj.GameTimeValue, common::SecondsToGameTime(10.));
+	vec2ParamDesc->SetConst(&obj.Vec2Value, VEC2(10.f, 10.f));
+	vec3ParamDesc->SetConst(&obj.Vec3Value, VEC3(10.f, 10.f, 10.f));
+	vec4ParamDesc->SetConst(&obj.Vec4Value, VEC4(10.f, 10.f, 10.f, 10.f));
+
+	EXPECT_EQ(100, obj.UintValue);
+	EXPECT_EQ(100.f, obj.FloatValue);
+	EXPECT_EQ(common::SecondsToGameTime(100.), obj.GameTimeValue);
+	EXPECT_EQ(VEC2(100.f, 100.f), obj.Vec2Value);
+	EXPECT_EQ(VEC3(100.f, 100.f, 100.f), obj.Vec3Value);
+	EXPECT_EQ(VEC4(100.f, 100.f, 100.f, 100.f), obj.Vec4Value);
+
+	uintParamDesc->SetConst(&obj.UintValue, 1000);
+	floatParamDesc->SetConst(&obj.FloatValue, 1000.f);
+	gameTimeParamDesc->SetConst(&obj.GameTimeValue, common::SecondsToGameTime(1000.));
+	vec2ParamDesc->SetConst(&obj.Vec2Value, VEC2(1000.f, 1000.f));
+	vec3ParamDesc->SetConst(&obj.Vec3Value, VEC3(1000.f, 1000.f, 1000.f));
+	vec4ParamDesc->SetConst(&obj.Vec4Value, VEC4(1000.f, 1000.f, 1000.f, 1000.f));
+
+	EXPECT_EQ(200, obj.UintValue);
+	EXPECT_EQ(200.f, obj.FloatValue);
+	EXPECT_EQ(common::SecondsToGameTime(200.), obj.GameTimeValue);
+	EXPECT_EQ(VEC2(200.f, 200.f), obj.Vec2Value);
+	EXPECT_EQ(VEC3(200.f, 200.f, 200.f), obj.Vec3Value);
+	EXPECT_EQ(VEC4(200.f, 200.f, 200.f, 200.f), obj.Vec4Value);
+}
+
+TEST(RawValues, MinMaxFailOnSet)
+{
+	unique_ptr<rs2::StructDesc> rawValuesStructDesc = RawValuesStruct::CreateStructDesc(
+		rs2::ParamDesc::FLAG_MINMAX_FAIL_ON_SET);
+	RawValuesStruct obj;
+
+	const rs2::UintParamDesc* uintParamDesc = (const rs2::UintParamDesc*)rawValuesStructDesc->Params[1].get();
+	const rs2::FloatParamDesc* floatParamDesc = (const rs2::FloatParamDesc*)rawValuesStructDesc->Params[2].get();
+	const rs2::GameTimeParamDesc* gameTimeParamDesc = (const rs2::GameTimeParamDesc*)rawValuesStructDesc->Params[4].get();
+	const rs2::Vec2ParamDesc* vec2ParamDesc = (const rs2::Vec2ParamDesc*)rawValuesStructDesc->Params[5].get();
+	const rs2::Vec3ParamDesc* vec3ParamDesc = (const rs2::Vec3ParamDesc*)rawValuesStructDesc->Params[6].get();
+	const rs2::Vec4ParamDesc* vec4ParamDesc = (const rs2::Vec4ParamDesc*)rawValuesStructDesc->Params[7].get();
+
+	EXPECT_FALSE( uintParamDesc->TrySetConst(&obj.UintValue, 10) );
+	EXPECT_FALSE( floatParamDesc->TrySetConst(&obj.FloatValue, 10.f) );
+	EXPECT_FALSE( gameTimeParamDesc->TrySetConst(&obj.GameTimeValue, common::SecondsToGameTime(10.)) );
+	EXPECT_FALSE( vec2ParamDesc->TrySetConst(&obj.Vec2Value, VEC2(10.f, 10.f)) );
+	EXPECT_FALSE( vec3ParamDesc->TrySetConst(&obj.Vec3Value, VEC3(10.f, 10.f, 10.f)) );
+	EXPECT_FALSE( vec4ParamDesc->TrySetConst(&obj.Vec4Value, VEC4(10.f, 10.f, 10.f, 10.f)) );
+}
+
+TEST(RawValues, MinMaxClampOnGet)
+{
+	unique_ptr<rs2::StructDesc> rawValuesStructDesc = RawValuesStruct::CreateStructDesc(
+		rs2::ParamDesc::FLAG_MINMAX_CLAMP_ON_GET);
+	RawValuesStruct obj;
+
+	const rs2::UintParamDesc* uintParamDesc = (const rs2::UintParamDesc*)rawValuesStructDesc->Params[1].get();
+	const rs2::FloatParamDesc* floatParamDesc = (const rs2::FloatParamDesc*)rawValuesStructDesc->Params[2].get();
+	const rs2::GameTimeParamDesc* gameTimeParamDesc = (const rs2::GameTimeParamDesc*)rawValuesStructDesc->Params[4].get();
+	const rs2::Vec2ParamDesc* vec2ParamDesc = (const rs2::Vec2ParamDesc*)rawValuesStructDesc->Params[5].get();
+	const rs2::Vec3ParamDesc* vec3ParamDesc = (const rs2::Vec3ParamDesc*)rawValuesStructDesc->Params[6].get();
+	const rs2::Vec4ParamDesc* vec4ParamDesc = (const rs2::Vec4ParamDesc*)rawValuesStructDesc->Params[7].get();
+
+	obj.UintValue = 10;
+	obj.FloatValue = 10.f;
+	obj.GameTimeValue = common::SecondsToGameTime(10.);
+	obj.Vec2Value = VEC2(10.f, 10.f);
+	obj.Vec3Value = VEC3(10.f, 10.f, 10.f);
+	obj.Vec4Value = VEC4(10.f, 10.f, 10.f, 10.f);
+
+	VEC2 v2;
+	VEC3 v3;
+	VEC4 v4;
+
+	EXPECT_EQ(100, uintParamDesc->GetConst(&obj.UintValue));
+	EXPECT_EQ(100.f, floatParamDesc->GetConst(&obj.FloatValue));
+	EXPECT_EQ(common::SecondsToGameTime(100.), gameTimeParamDesc->GetConst(&obj.GameTimeValue));
+	vec2ParamDesc->GetConst(v2, &obj.Vec2Value);
+	vec3ParamDesc->GetConst(v3, &obj.Vec3Value);
+	vec4ParamDesc->GetConst(v4, &obj.Vec4Value);
+	EXPECT_EQ(VEC2(100.f, 100.f), v2);
+	EXPECT_EQ(VEC3(100.f, 100.f, 100.f), v3);
+	EXPECT_EQ(VEC4(100.f, 100.f, 100.f, 100.f), v4);
+
+	obj.UintValue = 1000;
+	obj.FloatValue = 1000.f;
+	obj.GameTimeValue = common::SecondsToGameTime(1000.);
+	obj.Vec2Value = VEC2(1000.f, 1000.f);
+	obj.Vec3Value = VEC3(1000.f, 1000.f, 1000.f);
+	obj.Vec4Value = VEC4(1000.f, 1000.f, 1000.f, 1000.f);
+
+	EXPECT_EQ(200, uintParamDesc->GetConst(&obj.UintValue));
+	EXPECT_EQ(200.f, floatParamDesc->GetConst(&obj.FloatValue));
+	EXPECT_EQ(common::SecondsToGameTime(200.), gameTimeParamDesc->GetConst(&obj.GameTimeValue));
+	vec2ParamDesc->GetConst(v2, &obj.Vec2Value);
+	vec3ParamDesc->GetConst(v3, &obj.Vec3Value);
+	vec4ParamDesc->GetConst(v4, &obj.Vec4Value);
+	EXPECT_EQ(VEC2(200.f, 200.f), v2);
+	EXPECT_EQ(VEC3(200.f, 200.f, 200.f), v3);
+	EXPECT_EQ(VEC4(200.f, 200.f, 200.f, 200.f), v4);
 }
 
 TEST(Funcs, SetObjToDefault_GetSet)

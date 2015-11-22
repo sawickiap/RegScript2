@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Common/Base.hpp>
+#include <Common/Math.hpp>
 #include <Common/DateTime.hpp>
 
 #include <string>
@@ -66,3 +67,7 @@ inline float DBToPower(float db)
 {
 	return pow(10.f, db * 0.1f);
 }
+
+inline void Replicate(common::VEC2 &out, float value) { out.x = out.y = value; }
+inline void Replicate(common::VEC3 &out, float value) { out.x = out.y = out.z = value; }
+inline void Replicate(common::VEC4 &out, float value) { out.x = out.y = out.z = out.w = value; }
