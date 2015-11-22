@@ -172,6 +172,13 @@ typedef VecParam<common::VEC2> Vec2Param;
 typedef VecParam<common::VEC3> Vec3Param;
 typedef VecParam<common::VEC4> Vec4Param;
 
+enum class STORAGE
+{
+	RAW, // Value of destination type, e.g. unsigned, float.
+	PARAM, // Value of appropriate parameter type, e.g. UintParam, FloatParam.
+	FUNCTION, // No actual value, but GetFunc and/or SetFunc.
+};
+
 class ParamDesc
 {
 public:
@@ -184,13 +191,6 @@ public:
 		FLAG_MINMAX_CLAMP_ON_GET = 0x04,
 		FLAG_MINMAX_CLAMP_ON_SET = 0x08,
 		FLAG_MINMAX_FAIL_ON_SET  = 0x10,
-	};
-
-	enum class STORAGE
-	{
-		RAW, // Value of destination type, e.g. unsigned, float.
-		PARAM, // Value of appropriate parameter type, e.g. UintParam, FloatParam.
-		FUNCTION, // No actual value, but GetFunc and/or SetFunc.
 	};
 
 	uint32_t Flags;

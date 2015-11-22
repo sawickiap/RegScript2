@@ -166,11 +166,11 @@ void SimpleStruct::CheckCustomValues() const
 const rs2::StructDesc* SimpleStruct::GetStructDesc()
 {
 	RS2_GET_STRUCT_DESC_BEGIN(SimpleStruct);
-	RS2_ADD_PARAM_BOOL(BoolParam, rs2::ParamDesc::STORAGE::PARAM, true);
-	RS2_ADD_PARAM_UINT(UintParam, rs2::ParamDesc::STORAGE::PARAM, 123u);
-	RS2_ADD_PARAM_FLOAT(FloatParam, rs2::ParamDesc::STORAGE::PARAM, 3.14f);
-	RS2_ADD_PARAM_STRING(StringParam, rs2::ParamDesc::STORAGE::PARAM, L"StringDefault");
-	RS2_ADD_PARAM_GAMETIME(GameTimeParam, rs2::ParamDesc::STORAGE::PARAM, common::MillisecondsToGameTime(1023));
+	RS2_ADD_PARAM_BOOL(BoolParam, rs2::STORAGE::PARAM, true);
+	RS2_ADD_PARAM_UINT(UintParam, rs2::STORAGE::PARAM, 123u);
+	RS2_ADD_PARAM_FLOAT(FloatParam, rs2::STORAGE::PARAM, 3.14f);
+	RS2_ADD_PARAM_STRING(StringParam, rs2::STORAGE::PARAM, L"StringDefault");
+	RS2_ADD_PARAM_GAMETIME(GameTimeParam, rs2::STORAGE::PARAM, common::MillisecondsToGameTime(1023));
 	RS2_GET_STRUCT_DESC_END();
 }
 
@@ -212,7 +212,7 @@ unique_ptr<rs2::StructDesc> DerivedStruct::CreateStructDesc(const rs2::StructDes
 	StructDesc->AddParam(
 		L"DerivedUintParam",
 		offsetof(DerivedStruct, DerivedUintParam),
-		new rs2::UintParamDesc(rs2::ParamDesc::STORAGE::PARAM, 555u));
+		new rs2::UintParamDesc(rs2::STORAGE::PARAM, 555u));
 
 	return StructDesc;
 }
@@ -266,7 +266,7 @@ unique_ptr<rs2::StructDesc> ContainerStruct::CreateStructDesc(const rs2::StructD
 	StructDesc->AddParam(
 		L"FixedSizeArrayParam",
 		offsetof(ContainerStruct, FixedSizeArrayParam),
-		new rs2::FixedSizeArrayParamDesc(new rs2::UintParamDesc(rs2::ParamDesc::STORAGE::PARAM, 124), 3));
+		new rs2::FixedSizeArrayParamDesc(new rs2::UintParamDesc(rs2::STORAGE::PARAM, 124), 3));
 
 	return StructDesc;
 }
@@ -658,9 +658,9 @@ void MathStruct::CheckCustomValues() const
 const rs2::StructDesc* MathStruct::GetStructDesc()
 {
 	RS2_GET_STRUCT_DESC_BEGIN(MathStruct);
-	RS2_ADD_PARAM_VEC2(Vec2Param, rs2::ParamDesc::STORAGE::PARAM, VEC2(1.f, 2.f));
-	RS2_ADD_PARAM_VEC3(Vec3Param, rs2::ParamDesc::STORAGE::PARAM, VEC3(1.f, 2.f, 3.f));
-	RS2_ADD_PARAM_VEC4(Vec4Param, rs2::ParamDesc::STORAGE::PARAM, VEC4(1.f, 2.f, 3.f, 4.f));
+	RS2_ADD_PARAM_VEC2(Vec2Param, rs2::STORAGE::PARAM, VEC2(1.f, 2.f));
+	RS2_ADD_PARAM_VEC3(Vec3Param, rs2::STORAGE::PARAM, VEC3(1.f, 2.f, 3.f));
+	RS2_ADD_PARAM_VEC4(Vec4Param, rs2::STORAGE::PARAM, VEC4(1.f, 2.f, 3.f, 4.f));
 	RS2_GET_STRUCT_DESC_END();
 }
 
@@ -1026,7 +1026,7 @@ unique_ptr<rs2::StructDesc> PolymorphicBaseStruct::CreateStructDesc()
 	structDesc->AddParam(
 		L"BaseUintParam",
 		offsetof(PolymorphicBaseStruct, BaseUintParam),
-		new rs2::UintParamDesc(rs2::ParamDesc::STORAGE::PARAM, 555));
+		new rs2::UintParamDesc(rs2::STORAGE::PARAM, 555));
 	return structDesc;
 }
 
@@ -1059,7 +1059,7 @@ unique_ptr<rs2::StructDesc> PolymorphicDerivedStruct::CreateStructDesc(const rs2
 	structDesc->AddParam(
 		L"DerivedUintParam",
 		offsetof(PolymorphicDerivedStruct, DerivedUintParam),
-		new rs2::UintParamDesc(rs2::ParamDesc::STORAGE::PARAM, 333));
+		new rs2::UintParamDesc(rs2::STORAGE::PARAM, 333));
 	return structDesc;
 }
 
@@ -1391,23 +1391,23 @@ unique_ptr<rs2::StructDesc> RawValuesStruct::CreateStructDesc(uint32_t additiona
 	structDesc->AddParam(
 		L"BoolValue",
 		offsetof(RawValuesStruct, BoolValue),
-		new rs2::BoolParamDesc(rs2::ParamDesc::STORAGE::RAW, true));
+		new rs2::BoolParamDesc(rs2::STORAGE::RAW, true));
 	structDesc->AddParam(
 		L"UintValue",
 		offsetof(RawValuesStruct, UintValue),
-		new rs2::UintParamDesc(rs2::ParamDesc::STORAGE::RAW, 123, 0, rs2::UintParamDesc::FORMAT_DEC, 100, 200));
+		new rs2::UintParamDesc(rs2::STORAGE::RAW, 123, 0, rs2::UintParamDesc::FORMAT_DEC, 100, 200));
 	structDesc->AddParam(
 		L"FloatValue",
 		offsetof(RawValuesStruct, FloatValue),
-		new rs2::FloatParamDesc(rs2::ParamDesc::STORAGE::RAW, 3.14f, 0, rs2::FloatParamDesc::FORMAT_NORMAL, 100.f, 200.f));
+		new rs2::FloatParamDesc(rs2::STORAGE::RAW, 3.14f, 0, rs2::FloatParamDesc::FORMAT_NORMAL, 100.f, 200.f));
 	structDesc->AddParam(
 		L"StringValue",
 		offsetof(RawValuesStruct, StringValue),
-		new rs2::StringParamDesc(rs2::ParamDesc::STORAGE::RAW, L"StringDefault"));
+		new rs2::StringParamDesc(rs2::STORAGE::RAW, L"StringDefault"));
 	structDesc->AddParam(
 		L"GameTimeValue",
 		offsetof(RawValuesStruct, GameTimeValue),
-		new rs2::GameTimeParamDesc(rs2::ParamDesc::STORAGE::RAW,
+		new rs2::GameTimeParamDesc(rs2::STORAGE::RAW,
 			common::MillisecondsToGameTime(1023),
 			0,
 			common::SecondsToGameTime(100.),
@@ -1415,7 +1415,7 @@ unique_ptr<rs2::StructDesc> RawValuesStruct::CreateStructDesc(uint32_t additiona
 	structDesc->AddParam(
 		L"Vec2Value",
 		offsetof(RawValuesStruct, Vec2Value),
-		new rs2::Vec2ParamDesc(rs2::ParamDesc::STORAGE::RAW,
+		new rs2::Vec2ParamDesc(rs2::STORAGE::RAW,
 			VEC2(1.f, 2.f),
 			0,
 			VEC2(100.f, 100.f),
@@ -1423,7 +1423,7 @@ unique_ptr<rs2::StructDesc> RawValuesStruct::CreateStructDesc(uint32_t additiona
 	structDesc->AddParam(
 		L"Vec3Value",
 		offsetof(RawValuesStruct, Vec3Value),
-		new rs2::Vec3ParamDesc(rs2::ParamDesc::STORAGE::RAW,
+		new rs2::Vec3ParamDesc(rs2::STORAGE::RAW,
 			VEC3(1.f, 2.f, 3.f),
 			0,
 			VEC3(100.f, 100.f, 100.f),
@@ -1431,7 +1431,7 @@ unique_ptr<rs2::StructDesc> RawValuesStruct::CreateStructDesc(uint32_t additiona
 	structDesc->AddParam(
 		L"Vec4Value",
 		offsetof(RawValuesStruct, Vec4Value),
-		new rs2::Vec4ParamDesc(rs2::ParamDesc::STORAGE::RAW,
+		new rs2::Vec4ParamDesc(rs2::STORAGE::RAW,
 			VEC4(1.f, 2.f, 3.f, 4.f),
 			0,
 			VEC4(100.f, 100.f, 100.f, 100.f),
