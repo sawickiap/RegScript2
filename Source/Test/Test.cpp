@@ -1604,6 +1604,108 @@ TEST(RawValues, Copy)
 	EXPECT_EQ(VEC4(1.f, 2.f, 3.f, 4.f), obj2.Vec4Value);
 }
 
+TEST(Funcs, SetObjToDefault_GetSet)
+{
+	RawValuesStruct obj;
+
+	rs2::StructDesc structDesc(L"FuncStruct", 0);
+
+	rs2::BoolParamDesc boolParamDesc = {rs2::ParamDesc::STORAGE::FUNCTION};
+	boolParamDesc.DefaultValue = true;
+	boolParamDesc.GetFunc = [&obj](bool& outValue, const void* obj) -> bool
+	{
+		outValue = ((const RawValuesStruct*)obj)->BoolValue; return true;
+	};
+	boolParamDesc.SetFunc = [&obj](void* obj, bool value) -> bool
+	{
+		((RawValuesStruct*)obj)->BoolValue = value; return true;
+	};
+	structDesc.AddParam(L"BoolParam", 0, boolParamDesc);
+
+	rs2::UintParamDesc uintParamDesc = {rs2::ParamDesc::STORAGE::FUNCTION};
+	uintParamDesc.DefaultValue = 890;
+	uintParamDesc.GetFunc = [&obj](uint& outValue, const void* obj) -> bool
+	{
+		outValue = ((const RawValuesStruct*)obj)->UintValue; return true;
+	};
+	uintParamDesc.SetFunc = [&obj](void* obj, uint32_t value) -> bool
+	{
+		((RawValuesStruct*)obj)->UintValue = value; return true;
+	};
+	structDesc.AddParam(L"UintParam", 0, uintParamDesc);
+
+	rs2::FloatParamDesc floatParamDesc = {rs2::ParamDesc::STORAGE::FUNCTION};
+	floatParamDesc.DefaultValue = 10.5f;
+	floatParamDesc.GetFunc = [&obj](float& outValue, const void* obj) -> bool
+	{
+		outValue = ((const RawValuesStruct*)obj)->FloatValue; return true;
+	};
+	floatParamDesc.SetFunc = [&obj](void* obj, float value) -> bool
+	{
+		((RawValuesStruct*)obj)->FloatValue = value; return true;
+	};
+	structDesc.AddParam(L"FloatParam", 0, floatParamDesc);
+
+	rs2::StringParamDesc stringParamDesc = {rs2::ParamDesc::STORAGE::FUNCTION};
+	stringParamDesc.DefaultValue = L"String default";
+	stringParamDesc.GetFunc = [&obj](wstring& outValue, const void* obj) -> bool
+	{
+		outValue = ((const RawValuesStruct*)obj)->StringValue; return true;
+	};
+	stringParamDesc.SetFunc = [&obj](void* obj, const wstring& value) -> bool
+	{
+		((RawValuesStruct*)obj)->StringValue = value; return true;
+	};
+	structDesc.AddParam(L"StringParam", 0, stringParamDesc);
+
+	rs2::GameTimeParamDesc gameTimeParamDesc = {rs2::ParamDesc::STORAGE::FUNCTION};
+	gameTimeParamDesc.DefaultValue = GameTime(-1000000);
+	gameTimeParamDesc.GetFunc = [&obj](GameTime& outValue, const void* obj) -> bool
+	{
+		outValue = ((const RawValuesStruct*)obj)->GameTimeValue; return true;
+	};
+	gameTimeParamDesc.SetFunc = [&obj](void* obj, GameTime value) -> bool
+	{
+		((RawValuesStruct*)obj)->GameTimeValue = value; return true;
+	};
+	structDesc.AddParam(L"GameTimeParam", 0, gameTimeParamDesc);
+
+	rs2::Vec4ParamDesc vec4ParamDesc = {rs2::ParamDesc::STORAGE::FUNCTION};
+	vec4ParamDesc.DefaultValue = VEC4(4.f, 3.f, 2.f, 1.f);
+	vec4ParamDesc.GetFunc = [&obj](VEC4& outValue, const void* obj) -> bool
+	{
+		outValue = ((const RawValuesStruct*)obj)->Vec4Value; return true;
+	};
+	vec4ParamDesc.SetFunc = [&obj](void* obj, const VEC4& value) -> bool
+	{
+		((RawValuesStruct*)obj)->Vec4Value = value; return true;
+	};
+	structDesc.AddParam(L"Vec4Param", 0, vec4ParamDesc);
+
+	structDesc.SetObjToDefault(&obj);
+
+	EXPECT_EQ(true, obj.BoolValue);
+	EXPECT_EQ(890, obj.UintValue);
+	EXPECT_EQ(10.5f, obj.FloatValue);
+	EXPECT_EQ(L"String default", obj.StringValue);
+	EXPECT_EQ(GameTime(-1000000), obj.GameTimeValue);
+	EXPECT_EQ(VEC4(4.f, 3.f, 2.f, 1.f), obj.Vec4Value);
+
+	boolParamDesc.SetConst(&obj, false);
+	uintParamDesc.SetConst(&obj, 456);
+	floatParamDesc.SetConst(&obj, 256.f);
+	stringParamDesc.SetConst(&obj, L"Foo");
+	gameTimeParamDesc.SetConst(&obj, GameTime(123));
+	vec4ParamDesc.SetConst(&obj, VEC4(1.f, 2.f, 1.f, 54.f));
+
+	EXPECT_EQ(false, obj.BoolValue);
+	EXPECT_EQ(456, obj.UintValue);
+	EXPECT_EQ(256.f, obj.FloatValue);
+	EXPECT_EQ(L"Foo", obj.StringValue);
+	EXPECT_EQ(GameTime(123), obj.GameTimeValue);
+	EXPECT_EQ(VEC4(1.f, 2.f, 1.f, 54.f), obj.Vec4Value);
+}
+
 int wmain(int argc, wchar_t** argv)
 {
 	::testing::AddGlobalTestEnvironment(new Environment());

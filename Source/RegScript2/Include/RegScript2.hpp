@@ -10,6 +10,7 @@
 #include <string>
 #include <vector>
 #include <memory>
+#include <functional>
 
 #include <cassert>
 #include <cstdint>
@@ -183,6 +184,7 @@ public:
 	{
 		RAW, // Value of destination type, e.g. unsigned, float.
 		PARAM, // Value of appropriate parameter type, e.g. UintParam, FloatParam.
+		FUNCTION, // No actual value, but GetFunc and/or SetFunc.
 	};
 
 	uint32_t Flags;
@@ -287,6 +289,11 @@ class BoolParamDesc : public TypedParamDesc<bool>
 public:
 	typedef BoolParam Param_t;
 	typedef bool Value_t;
+	typedef std::function<bool(Value_t&, const void*)> GetFunc_t;
+	typedef std::function<bool(void*, Value_t)> SetFunc_t;
+
+	GetFunc_t GetFunc;
+	SetFunc_t SetFunc;
 
 	BoolParamDesc(STORAGE storage) :
 		TypedParamDesc<bool>(storage)
@@ -297,13 +304,13 @@ public:
 
 	virtual size_t GetParamSize() const;
 
-	Value_t* AccessAsRaw(void* param) const { return (Value_t*)param; }
-	const Value_t* AccessAsRaw(const void* param) const { return (const Value_t*)param; }
-	Param_t* AccessAsParam(void* param) const { Param_t* result = (Param_t*)param; result->CheckMagicNumber(); return result; }
-	const Param_t* AccessAsParam(const void* param) const { const Param_t* result = (const Param_t*)param; result->CheckMagicNumber(); return result; }
+	Value_t* AccessAsRaw(void* param) const { assert(GetStorage() == STORAGE::RAW); return (Value_t*)param; }
+	const Value_t* AccessAsRaw(const void* param) const { assert(GetStorage() == STORAGE::RAW); return (const Value_t*)param; }
+	Param_t* AccessAsParam(void* param) const { assert(GetStorage() == STORAGE::PARAM); Param_t* result = (Param_t*)param; result->CheckMagicNumber(); return result; }
+	const Param_t* AccessAsParam(const void* param) const { assert(GetStorage() == STORAGE::PARAM); const Param_t* result = (const Param_t*)param; result->CheckMagicNumber(); return result; }
 
-	virtual bool CanWrite() const { return !(Flags & FLAG_READ_ONLY); }
-	virtual bool CanRead() const { return !(Flags & FLAG_WRITE_ONLY); }
+	virtual bool CanWrite() const { if(GetStorage() == STORAGE::FUNCTION && !SetFunc) return false; return !(Flags & FLAG_READ_ONLY); }
+	virtual bool CanRead() const { if(GetStorage() == STORAGE::FUNCTION && !GetFunc) return false; return !(Flags & FLAG_WRITE_ONLY); }
 	virtual bool IsConst(const void* param) const;
 	bool TryGetConst(Value_t& outValue, const void* param) const;
 	Value_t GetConst(const void* param) const;
@@ -321,6 +328,11 @@ class UintParamDesc : public TypedParamDesc<uint32_t>
 public:
 	typedef UintParam Param_t;
 	typedef uint32_t Value_t;
+	typedef std::function<bool(Value_t&, const void*)> GetFunc_t;
+	typedef std::function<bool(void*, Value_t)> SetFunc_t;
+
+	GetFunc_t GetFunc;
+	SetFunc_t SetFunc;
 
 	// It only affects the way of displaying value.
 	enum FORMAT
@@ -342,13 +354,13 @@ public:
 
 	virtual size_t GetParamSize() const;
 
-	Value_t* AccessAsRaw(void* param) const { return (Value_t*)param; }
-	const Value_t* AccessAsRaw(const void* param) const { return (const Value_t*)param; }
-	Param_t* AccessAsParam(void* param) const { Param_t* result = (Param_t*)param; result->CheckMagicNumber(); return result; }
-	const Param_t* AccessAsParam(const void* param) const { const Param_t* result = (const Param_t*)param; result->CheckMagicNumber(); return result; }
+	Value_t* AccessAsRaw(void* param) const { assert(GetStorage() == STORAGE::RAW); return (Value_t*)param; }
+	const Value_t* AccessAsRaw(const void* param) const { assert(GetStorage() == STORAGE::RAW); return (const Value_t*)param; }
+	Param_t* AccessAsParam(void* param) const { assert(GetStorage() == STORAGE::PARAM); Param_t* result = (Param_t*)param; result->CheckMagicNumber(); return result; }
+	const Param_t* AccessAsParam(const void* param) const { assert(GetStorage() == STORAGE::PARAM); const Param_t* result = (const Param_t*)param; result->CheckMagicNumber(); return result; }
 
-	virtual bool CanWrite() const { return !(Flags & FLAG_READ_ONLY); }
-	virtual bool CanRead() const { return !(Flags & FLAG_WRITE_ONLY); }
+	virtual bool CanWrite() const { if(GetStorage() == STORAGE::FUNCTION && !SetFunc) return false; return !(Flags & FLAG_READ_ONLY); }
+	virtual bool CanRead() const { if(GetStorage() == STORAGE::FUNCTION && !GetFunc) return false; return !(Flags & FLAG_WRITE_ONLY); }
 	virtual bool IsConst(const void* param) const;
 	bool TryGetConst(Value_t& outValue, const void* param) const;
 	Value_t GetConst(const void* param) const;
@@ -366,6 +378,11 @@ class FloatParamDesc : public TypedParamDesc<float>
 public:
 	typedef FloatParam Param_t;
 	typedef float Value_t;
+	typedef std::function<bool(Value_t&, const void*)> GetFunc_t;
+	typedef std::function<bool(void*, Value_t)> SetFunc_t;
+
+	GetFunc_t GetFunc;
+	SetFunc_t SetFunc;
 
 	// It only affects the way of displaying value.
 	enum FORMAT
@@ -388,13 +405,13 @@ public:
 
 	virtual size_t GetParamSize() const;
 
-	Value_t* AccessAsRaw(void* param) const { return (Value_t*)param; }
-	const Value_t* AccessAsRaw(const void* param) const { return (const Value_t*)param; }
-	Param_t* AccessAsParam(void* param) const { Param_t* result = (Param_t*)param; result->CheckMagicNumber(); return result; }
-	const Param_t* AccessAsParam(const void* param) const { const Param_t* result = (const Param_t*)param; result->CheckMagicNumber(); return result; }
+	Value_t* AccessAsRaw(void* param) const { assert(GetStorage() == STORAGE::RAW); return (Value_t*)param; }
+	const Value_t* AccessAsRaw(const void* param) const { assert(GetStorage() == STORAGE::RAW); return (const Value_t*)param; }
+	Param_t* AccessAsParam(void* param) const { assert(GetStorage() == STORAGE::PARAM); Param_t* result = (Param_t*)param; result->CheckMagicNumber(); return result; }
+	const Param_t* AccessAsParam(const void* param) const { assert(GetStorage() == STORAGE::PARAM); const Param_t* result = (const Param_t*)param; result->CheckMagicNumber(); return result; }
 
-	virtual bool CanWrite() const { return !(Flags & FLAG_READ_ONLY); }
-	virtual bool CanRead() const { return !(Flags & FLAG_WRITE_ONLY); }
+	virtual bool CanWrite() const { if(GetStorage() == STORAGE::FUNCTION && !SetFunc) return false; return !(Flags & FLAG_READ_ONLY); }
+	virtual bool CanRead() const { if(GetStorage() == STORAGE::FUNCTION && !GetFunc) return false; return !(Flags & FLAG_WRITE_ONLY); }
 	virtual bool IsConst(const void* param) const;
 	bool TryGetConst(Value_t& outValue, const void* param) const;
 	Value_t GetConst(const void* param) const;
@@ -412,6 +429,11 @@ class StringParamDesc : public TypedParamDesc<std::wstring>
 public:
 	typedef StringParam Param_t;
 	typedef std::wstring Value_t;
+	typedef std::function<bool(Value_t&, const void*)> GetFunc_t;
+	typedef std::function<bool(void*, const Value_t&)> SetFunc_t;
+
+	GetFunc_t GetFunc;
+	SetFunc_t SetFunc;
 
 	StringParamDesc(STORAGE storage) :
 		TypedParamDesc<std::wstring>(storage)
@@ -422,13 +444,13 @@ public:
 
 	virtual size_t GetParamSize() const;
 
-	Value_t* AccessAsRaw(void* param) const { return (Value_t*)param; }
-	const Value_t* AccessAsRaw(const void* param) const { return (const Value_t*)param; }
-	Param_t* AccessAsParam(void* param) const { Param_t* result = (Param_t*)param; result->CheckMagicNumber(); return result; }
-	const Param_t* AccessAsParam(const void* param) const { const Param_t* result = (const Param_t*)param; result->CheckMagicNumber(); return result; }
+	Value_t* AccessAsRaw(void* param) const { assert(GetStorage() == STORAGE::RAW); return (Value_t*)param; }
+	const Value_t* AccessAsRaw(const void* param) const { assert(GetStorage() == STORAGE::RAW); return (const Value_t*)param; }
+	Param_t* AccessAsParam(void* param) const { assert(GetStorage() == STORAGE::PARAM); Param_t* result = (Param_t*)param; result->CheckMagicNumber(); return result; }
+	const Param_t* AccessAsParam(const void* param) const { assert(GetStorage() == STORAGE::PARAM); const Param_t* result = (const Param_t*)param; result->CheckMagicNumber(); return result; }
 
-	virtual bool CanWrite() const { return !(Flags & FLAG_READ_ONLY); }
-	virtual bool CanRead() const { return !(Flags & FLAG_WRITE_ONLY); }
+	virtual bool CanWrite() const { if(GetStorage() == STORAGE::FUNCTION && !SetFunc) return false; return !(Flags & FLAG_READ_ONLY); }
+	virtual bool CanRead() const { if(GetStorage() == STORAGE::FUNCTION && !GetFunc) return false; return !(Flags & FLAG_WRITE_ONLY); }
 	virtual bool IsConst(const void* param) const;
 	bool TryGetConst(Value_t& outValue, const void* param) const;
 	void GetConst(Value_t& outValue, const void* param) const;
@@ -448,6 +470,11 @@ class GameTimeParamDesc : public TypedParamDesc<common::GameTime>
 public:
 	typedef GameTimeParam Param_t;
 	typedef common::GameTime Value_t;
+	typedef std::function<bool(Value_t&, const void*)> GetFunc_t;
+	typedef std::function<bool(void*, Value_t)> SetFunc_t;
+
+	GetFunc_t GetFunc;
+	SetFunc_t SetFunc;
 
 	GameTimeParamDesc(STORAGE storage) :
 		TypedParamDesc<common::GameTime>(storage)
@@ -458,13 +485,13 @@ public:
 
 	virtual size_t GetParamSize() const;
 
-	Value_t* AccessAsRaw(void* param) const { return (Value_t*)param; }
-	const Value_t* AccessAsRaw(const void* param) const { return (const Value_t*)param; }
-	Param_t* AccessAsParam(void* param) const { Param_t* result = (Param_t*)param; result->CheckMagicNumber(); return result; }
-	const Param_t* AccessAsParam(const void* param) const { const Param_t* result = (const Param_t*)param; result->CheckMagicNumber(); return result; }
+	Value_t* AccessAsRaw(void* param) const { assert(GetStorage() == STORAGE::RAW); return (Value_t*)param; }
+	const Value_t* AccessAsRaw(const void* param) const { assert(GetStorage() == STORAGE::RAW); return (const Value_t*)param; }
+	Param_t* AccessAsParam(void* param) const { assert(GetStorage() == STORAGE::PARAM); Param_t* result = (Param_t*)param; result->CheckMagicNumber(); return result; }
+	const Param_t* AccessAsParam(const void* param) const { assert(GetStorage() == STORAGE::PARAM); const Param_t* result = (const Param_t*)param; result->CheckMagicNumber(); return result; }
 
-	virtual bool CanWrite() const { return !(Flags & FLAG_READ_ONLY); }
-	virtual bool CanRead() const { return !(Flags & FLAG_WRITE_ONLY); }
+	virtual bool CanWrite() const { if(GetStorage() == STORAGE::FUNCTION && !SetFunc) return false; return !(Flags & FLAG_READ_ONLY); }
+	virtual bool CanRead() const { if(GetStorage() == STORAGE::FUNCTION && !GetFunc) return false; return !(Flags & FLAG_WRITE_ONLY); }
 	virtual bool IsConst(const void* param) const;
 	bool TryGetConst(Value_t& outValue, const void* param) const;
 	Value_t GetConst(const void* param) const;
@@ -483,6 +510,11 @@ class VecParamDesc : public TypedParamDesc<Vec_t>
 public:
 	typedef VecParam<Vec_t> Param_t;
 	typedef Vec_t Value_t;
+	typedef std::function<bool(Value_t&, const void*)> GetFunc_t;
+	typedef std::function<bool(void*, const Value_t&)> SetFunc_t;
+
+	GetFunc_t GetFunc;
+	SetFunc_t SetFunc;
 
 	VecParamDesc(STORAGE storage) :
 		TypedParamDesc<Vec_t>(storage)
@@ -493,13 +525,13 @@ public:
 
 	virtual size_t GetParamSize() const;
 
-	Value_t* AccessAsRaw(void* param) const { return (Value_t*)param; }
-	const Value_t* AccessAsRaw(const void* param) const { return (const Value_t*)param; }
-	Param_t* AccessAsParam(void* param) const { Param_t* result = (Param_t*)param; result->CheckMagicNumber(); return result; }
-	const Param_t* AccessAsParam(const void* param) const { const Param_t* result = (const Param_t*)param; result->CheckMagicNumber(); return result; }
+	Value_t* AccessAsRaw(void* param) const { assert(GetStorage() == STORAGE::RAW); return (Value_t*)param; }
+	const Value_t* AccessAsRaw(const void* param) const { assert(GetStorage() == STORAGE::RAW); return (const Value_t*)param; }
+	Param_t* AccessAsParam(void* param) const { assert(GetStorage() == STORAGE::PARAM); Param_t* result = (Param_t*)param; result->CheckMagicNumber(); return result; }
+	const Param_t* AccessAsParam(const void* param) const { assert(GetStorage() == STORAGE::PARAM); const Param_t* result = (const Param_t*)param; result->CheckMagicNumber(); return result; }
 
-	virtual bool CanWrite() const { return !(Flags & FLAG_READ_ONLY); }
-	virtual bool CanRead() const { return !(Flags & FLAG_WRITE_ONLY); }
+	virtual bool CanWrite() const { if(GetStorage() == STORAGE::FUNCTION && !SetFunc) return false; return !(Flags & FLAG_READ_ONLY); }
+	virtual bool CanRead() const { if(GetStorage() == STORAGE::FUNCTION && !GetFunc) return false; return !(Flags & FLAG_WRITE_ONLY); }
 	virtual bool IsConst(const void* param) const;
 	bool TryGetConst(Value_t& outValue, const void* param) const;
 	void GetConst(Value_t& outValue, const void* param) const;

@@ -265,7 +265,6 @@ size_t BoolParamDesc::GetParamSize() const
 	case STORAGE::PARAM:
 		return sizeof(Param_t);
 	default:
-		assert(0);
 		return 0;
 	}
 }
@@ -297,6 +296,8 @@ bool BoolParamDesc::TryGetConst(Value_t& outValue, const void* param) const
 		return true;
 	case STORAGE::PARAM:
 		return AccessAsParam(param)->TryGetConst(outValue);
+	case STORAGE::FUNCTION:
+		return GetFunc(outValue, param);
 	default:
 		assert(0);
 		return false;
@@ -324,6 +325,9 @@ bool BoolParamDesc::TrySetConst(void* param, Value_t value) const
 	case STORAGE::PARAM:
 		AccessAsParam(param)->SetConst(value);
 		break;
+	case STORAGE::FUNCTION:
+		return SetFunc(param, value);
+		break;
 	default:
 		assert(0);
 	}
@@ -347,6 +351,9 @@ void BoolParamDesc::Copy(void* dstParam, const void* srcParam) const
 		break;
 	case STORAGE::PARAM:
 		*AccessAsParam(dstParam) = *AccessAsParam(srcParam);
+		break;
+	case STORAGE::FUNCTION:
+		SetConst(dstParam, GetConst(srcParam));
 		break;
 	default:
 		assert(0);
@@ -389,7 +396,6 @@ size_t UintParamDesc::GetParamSize() const
 	case STORAGE::PARAM:
 		return sizeof(Param_t);
 	default:
-		assert(0);
 		return 0;
 	}
 }
@@ -421,6 +427,8 @@ bool UintParamDesc::TryGetConst(Value_t& outValue, const void* param) const
 		return true;
 	case STORAGE::PARAM:
 		return AccessAsParam(param)->TryGetConst(outValue);
+	case STORAGE::FUNCTION:
+		return GetFunc(outValue, param);
 	default:
 		assert(0);
 		return false;
@@ -448,6 +456,9 @@ bool UintParamDesc::TrySetConst(void* param, Value_t value) const
 	case STORAGE::PARAM:
 		AccessAsParam(param)->SetConst(value);
 		break;
+	case STORAGE::FUNCTION:
+		return SetFunc(param, value);
+		break;
 	default:
 		assert(0);
 	}
@@ -472,6 +483,9 @@ void UintParamDesc::Copy(void* dstParam, const void* srcParam) const
 		break;
 	case STORAGE::PARAM:
 		*AccessAsParam(dstParam) = *AccessAsParam(srcParam);
+		break;
+	case STORAGE::FUNCTION:
+		SetConst(dstParam, GetConst(srcParam));
 		break;
 	default:
 		assert(0);
@@ -526,7 +540,6 @@ size_t FloatParamDesc::GetParamSize() const
 	case STORAGE::PARAM:
 		return sizeof(Param_t);
 	default:
-		assert(0);
 		return 0;
 	}
 }
@@ -558,6 +571,8 @@ bool FloatParamDesc::TryGetConst(Value_t& outValue, const void* param) const
 		return true;
 	case STORAGE::PARAM:
 		return AccessAsParam(param)->TryGetConst(outValue);
+	case STORAGE::FUNCTION:
+		return GetFunc(outValue, param);
 	default:
 		assert(0);
 		return false;
@@ -585,6 +600,9 @@ bool FloatParamDesc::TrySetConst(void* param, Value_t value) const
 	case STORAGE::PARAM:
 		AccessAsParam(param)->SetConst(value);
 		break;
+	case STORAGE::FUNCTION:
+		return SetFunc(param, value);
+		break;
 	default:
 		assert(0);
 	}
@@ -609,6 +627,9 @@ void FloatParamDesc::Copy(void* dstParam, const void* srcParam) const
 		break;
 	case STORAGE::PARAM:
 		*AccessAsParam(dstParam) = *AccessAsParam(srcParam);
+		break;
+	case STORAGE::FUNCTION:
+		SetConst(dstParam, GetConst(srcParam));
 		break;
 	default:
 		assert(0);
@@ -691,7 +712,6 @@ size_t StringParamDesc::GetParamSize() const
 	case STORAGE::PARAM:
 		return sizeof(Param_t);
 	default:
-		assert(0);
 		return 0;
 	}
 }
@@ -723,6 +743,8 @@ bool StringParamDesc::TryGetConst(Value_t& outValue, const void* param) const
 		return true;
 	case STORAGE::PARAM:
 		return AccessAsParam(param)->TryGetConst(outValue);
+	case STORAGE::FUNCTION:
+		return GetFunc(outValue, param);
 	default:
 		assert(0);
 		return false;
@@ -746,6 +768,9 @@ bool StringParamDesc::TrySetConst(void* param, const wchar_t* value) const
 		break;
 	case STORAGE::PARAM:
 		AccessAsParam(param)->SetConst(value);
+		break;
+	case STORAGE::FUNCTION:
+		return SetFunc(param, value);
 		break;
 	default:
 		assert(0);
@@ -771,6 +796,13 @@ void StringParamDesc::Copy(void* dstParam, const void* srcParam) const
 		break;
 	case STORAGE::PARAM:
 		*AccessAsParam(dstParam) = *AccessAsParam(srcParam);
+		break;
+	case STORAGE::FUNCTION:
+		{
+			Value_t value;
+			GetConst(value, srcParam);
+			SetConst(dstParam, value);
+		}
 		break;
 	default:
 		assert(0);
@@ -800,7 +832,6 @@ size_t GameTimeParamDesc::GetParamSize() const
 	case STORAGE::PARAM:
 		return sizeof(Param_t);
 	default:
-		assert(0);
 		return 0;
 	}
 }
@@ -832,6 +863,8 @@ bool GameTimeParamDesc::TryGetConst(Value_t& outValue, const void* param) const
 		return true;
 	case STORAGE::PARAM:
 		return AccessAsParam(param)->TryGetConst(outValue);
+	case STORAGE::FUNCTION:
+		return GetFunc(outValue, param);
 	default:
 		assert(0);
 		return false;
@@ -859,6 +892,9 @@ bool GameTimeParamDesc::TrySetConst(void* param, Value_t value) const
 	case STORAGE::PARAM:
 		AccessAsParam(param)->SetConst(value);
 		break;
+	case STORAGE::FUNCTION:
+		return SetFunc(param, value);
+		break;
 	default:
 		assert(0);
 	}
@@ -882,6 +918,9 @@ void GameTimeParamDesc::Copy(void* dstParam, const void* srcParam) const
 		break;
 	case STORAGE::PARAM:
 		*AccessAsParam(dstParam) = *AccessAsParam(srcParam);
+		break;
+	case STORAGE::FUNCTION:
+		SetConst(dstParam, GetConst(srcParam));
 		break;
 	default:
 		assert(0);
@@ -929,7 +968,6 @@ size_t VecParamDesc<Vec_t>::GetParamSize() const
 	case STORAGE::PARAM:
 		return sizeof(Param_t);
 	default:
-		assert(0);
 		return 0;
 	}
 }
@@ -963,6 +1001,8 @@ bool VecParamDesc<Vec_t>::TryGetConst(Value_t& outValue, const void* param) cons
 		return true;
 	case STORAGE::PARAM:
 		return AccessAsParam(param)->TryGetConst(outValue);
+	case STORAGE::FUNCTION:
+		return GetFunc(outValue, param);
 	default:
 		assert(0);
 		return false;
@@ -988,6 +1028,9 @@ bool VecParamDesc<Vec_t>::TrySetConst(void* param, const Value_t& value) const
 		break;
 	case STORAGE::PARAM:
 		AccessAsParam(param)->SetConst(value);
+		break;
+	case STORAGE::FUNCTION:
+		return SetFunc(param, value);
 		break;
 	default:
 		assert(0);
@@ -1016,6 +1059,13 @@ void VecParamDesc<Vec_t>::Copy(void* dstParam, const void* srcParam) const
 	case STORAGE::PARAM:
 		*AccessAsParam(dstParam) = *AccessAsParam(srcParam);
 		break;
+	case STORAGE::FUNCTION:
+	{
+		Value_t value;
+		GetConst(value, srcParam);
+		SetConst(dstParam, value);
+	}
+	break;
 	default:
 		assert(0);
 	}
