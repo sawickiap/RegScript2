@@ -129,7 +129,7 @@ public:
 	void SetCustomValues();
 	void CheckCustomValues() const;
 
-	static unique_ptr<rs2::StructDesc> CreateStructDesc();
+	static const rs2::StructDesc* GetStructDesc();
 };
 
 void SimpleStruct::CheckDefaultValues() const
@@ -163,33 +163,15 @@ void SimpleStruct::CheckCustomValues() const
 	EXPECT_EQ(common::MillisecondsToGameTime(123), GameTimeParam.GetConst());
 }
 
-unique_ptr<rs2::StructDesc> SimpleStruct::CreateStructDesc()
+const rs2::StructDesc* SimpleStruct::GetStructDesc()
 {
-	unique_ptr<rs2::StructDesc> structDesc =
-		std::make_unique<rs2::StructDesc>(L"SimpleStruct", sizeof(SimpleStruct));
-
-	structDesc->AddParam(
-		L"BoolParam",
-		offsetof(SimpleStruct, BoolParam),
-		new rs2::BoolParamDesc(rs2::ParamDesc::STORAGE::PARAM, true));
-	structDesc->AddParam(
-		L"UintParam",
-		offsetof(SimpleStruct, UintParam),
-		new rs2::UintParamDesc(rs2::ParamDesc::STORAGE::PARAM, 123u));
-	structDesc->AddParam(
-		L"FloatParam",
-		offsetof(SimpleStruct, FloatParam),
-		new rs2::FloatParamDesc(rs2::ParamDesc::STORAGE::PARAM, 3.14f));
-	structDesc->AddParam(
-		L"StringParam",
-		offsetof(SimpleStruct, StringParam),
-		new rs2::StringParamDesc(rs2::ParamDesc::STORAGE::PARAM, L"StringDefault"));
-	structDesc->AddParam(
-		L"GameTimeParam",
-		offsetof(SimpleStruct, GameTimeParam),
-		new rs2::GameTimeParamDesc(rs2::ParamDesc::STORAGE::PARAM, common::MillisecondsToGameTime(1023)));
-
-	return structDesc;
+	RS2_GET_STRUCT_DESC_BEGIN(SimpleStruct);
+	RS2_ADD_PARAM_BOOL(BoolParam, rs2::ParamDesc::STORAGE::PARAM, true);
+	RS2_ADD_PARAM_UINT(UintParam, rs2::ParamDesc::STORAGE::PARAM, 123u);
+	RS2_ADD_PARAM_FLOAT(FloatParam, rs2::ParamDesc::STORAGE::PARAM, 3.14f);
+	RS2_ADD_PARAM_STRING(StringParam, rs2::ParamDesc::STORAGE::PARAM, L"StringDefault");
+	RS2_ADD_PARAM_GAMETIME(GameTimeParam, rs2::ParamDesc::STORAGE::PARAM, common::MillisecondsToGameTime(1023));
+	RS2_GET_STRUCT_DESC_END();
 }
 
 class DerivedStruct : public SimpleStruct
@@ -292,7 +274,7 @@ unique_ptr<rs2::StructDesc> ContainerStruct::CreateStructDesc(const rs2::StructD
 class Fixture1 : public ::testing::Test
 {
 protected:
-	unique_ptr<rs2::StructDesc> m_SimpleStructDesc;
+	const rs2::StructDesc* m_SimpleStructDesc;
 	unique_ptr<rs2::StructDesc> m_DerivedStructDesc;
 	unique_ptr<rs2::StructDesc> m_ContainerStructDesc;
 
@@ -303,9 +285,9 @@ protected:
 };
 
 Fixture1::Fixture1() :
-	m_SimpleStructDesc(SimpleStruct::CreateStructDesc()),
-	m_DerivedStructDesc(DerivedStruct::CreateStructDesc(m_SimpleStructDesc.get())),
-	m_ContainerStructDesc(ContainerStruct::CreateStructDesc(m_SimpleStructDesc.get()))
+	m_SimpleStructDesc(SimpleStruct::GetStructDesc()),
+	m_DerivedStructDesc(DerivedStruct::CreateStructDesc(m_SimpleStructDesc)),
+	m_ContainerStructDesc(ContainerStruct::CreateStructDesc(m_SimpleStructDesc))
 {
 }
 
@@ -854,7 +836,7 @@ TEST(Math, TokDocLoadOptionalAndNotFound)
 
 TEST(TokDoc, SimpleStructTokDocSaveLoad)
 {
-	unique_ptr<rs2::StructDesc> structDesc = SimpleStruct::CreateStructDesc();
+	const rs2::StructDesc* structDesc = SimpleStruct::GetStructDesc();
 	common::tokdoc::Node rootNode;
 	{
 		SimpleStruct obj;
@@ -872,8 +854,8 @@ TEST(TokDoc, SimpleStructTokDocSaveLoad)
 
 TEST(TokDoc, DerivedStructTokDocSaveLoad)
 {
-	unique_ptr<rs2::StructDesc> simpleStructDesc = SimpleStruct::CreateStructDesc();
-	unique_ptr<rs2::StructDesc> derivedStructDesc = DerivedStruct::CreateStructDesc(simpleStructDesc.get());
+	const rs2::StructDesc* simpleStructDesc = SimpleStruct::GetStructDesc();
+	unique_ptr<rs2::StructDesc> derivedStructDesc = DerivedStruct::CreateStructDesc(simpleStructDesc);
 	common::tokdoc::Node rootNode;
 	{
 		DerivedStruct obj;
@@ -891,8 +873,8 @@ TEST(TokDoc, DerivedStructTokDocSaveLoad)
 
 TEST(TokDoc, ContainerStructTokDocSaveLoad)
 {
-	unique_ptr<rs2::StructDesc> simpleStructDesc = SimpleStruct::CreateStructDesc();
-	unique_ptr<rs2::StructDesc> containerStructDesc = ContainerStruct::CreateStructDesc(simpleStructDesc.get());
+	const rs2::StructDesc* simpleStructDesc = SimpleStruct::GetStructDesc();
+	unique_ptr<rs2::StructDesc> containerStructDesc = ContainerStruct::CreateStructDesc(simpleStructDesc);
 	common::tokdoc::Node rootNode;
 	{
 		ContainerStruct obj;
@@ -928,7 +910,7 @@ TEST(TokDoc, MathStructTokDocSaveLoad)
 
 TEST(TokDoc, SimpleStructTokDocStringSaveLoad)
 {
-	unique_ptr<rs2::StructDesc> structDesc = SimpleStruct::CreateStructDesc();
+	const rs2::StructDesc* structDesc = SimpleStruct::GetStructDesc();
 	wstring doc;
 	{
 		SimpleStruct obj;
@@ -953,8 +935,8 @@ TEST(TokDoc, SimpleStructTokDocStringSaveLoad)
 
 TEST(TokDoc, DerivedStructTokDocStringSaveLoad)
 {
-	unique_ptr<rs2::StructDesc> simpleStructDesc = SimpleStruct::CreateStructDesc();
-	unique_ptr<rs2::StructDesc> derivedStructDesc = DerivedStruct::CreateStructDesc(simpleStructDesc.get());
+	const rs2::StructDesc* simpleStructDesc = SimpleStruct::GetStructDesc();
+	unique_ptr<rs2::StructDesc> derivedStructDesc = DerivedStruct::CreateStructDesc(simpleStructDesc);
 	wstring doc;
 	{
 		DerivedStruct obj;
@@ -979,8 +961,8 @@ TEST(TokDoc, DerivedStructTokDocStringSaveLoad)
 
 TEST(TokDoc, ContainerStructTokDocStringSaveLoad)
 {
-	unique_ptr<rs2::StructDesc> simpleStructDesc = SimpleStruct::CreateStructDesc();
-	unique_ptr<rs2::StructDesc> containerStructDesc = ContainerStruct::CreateStructDesc(simpleStructDesc.get());
+	const rs2::StructDesc* simpleStructDesc = SimpleStruct::GetStructDesc();
+	unique_ptr<rs2::StructDesc> containerStructDesc = ContainerStruct::CreateStructDesc(simpleStructDesc);
 	wstring doc;
 	{
 		ContainerStruct obj;
@@ -1104,7 +1086,7 @@ TEST(PolymorphicStruct, SetAndGet)
 
 TEST(StringConversion, Bool)
 {
-	unique_ptr<rs2::StructDesc> structDesc = SimpleStruct::CreateStructDesc();
+	const rs2::StructDesc* structDesc = SimpleStruct::GetStructDesc();
 	size_t paramIndex = structDesc->Find(L"BoolParam");
 	ASSERT_NE((size_t)-1, paramIndex);
 	const rs2::ParamDesc* paramDesc = structDesc->GetParamDesc(paramIndex);
@@ -1136,7 +1118,7 @@ TEST(StringConversion, Bool)
 
 TEST(StringConversion, Uint)
 {
-	unique_ptr<rs2::StructDesc> structDesc = SimpleStruct::CreateStructDesc();
+	const rs2::StructDesc* structDesc = SimpleStruct::GetStructDesc();
 	size_t paramIndex = structDesc->Find(L"UintParam");
 	ASSERT_NE((size_t)-1, paramIndex);
 	const rs2::ParamDesc* paramDesc = structDesc->GetParamDesc(paramIndex);
@@ -1158,7 +1140,7 @@ TEST(StringConversion, Uint)
 
 TEST(StringConversion, Float)
 {
-	unique_ptr<rs2::StructDesc> structDesc = SimpleStruct::CreateStructDesc();
+	const rs2::StructDesc* structDesc = SimpleStruct::GetStructDesc();
 	size_t paramIndex = structDesc->Find(L"FloatParam");
 	ASSERT_NE((size_t)-1, paramIndex);
 	const rs2::ParamDesc* paramDesc = structDesc->GetParamDesc(paramIndex);
@@ -1184,7 +1166,7 @@ TEST(StringConversion, Float)
 
 TEST(StringConversion, String)
 {
-	unique_ptr<rs2::StructDesc> structDesc = SimpleStruct::CreateStructDesc();
+	const rs2::StructDesc* structDesc = SimpleStruct::GetStructDesc();
 	size_t paramIndex = structDesc->Find(L"StringParam");
 	ASSERT_NE((size_t)-1, paramIndex);
 	const rs2::ParamDesc* paramDesc = structDesc->GetParamDesc(paramIndex);
@@ -1204,7 +1186,7 @@ TEST(StringConversion, String)
 
 TEST(StringConversion, GameTime)
 {
-	unique_ptr<rs2::StructDesc> structDesc = SimpleStruct::CreateStructDesc();
+	const rs2::StructDesc* structDesc = SimpleStruct::GetStructDesc();
 	size_t paramIndex = structDesc->Find(L"GameTimeParam");
 	ASSERT_NE((size_t)-1, paramIndex);
 	const rs2::ParamDesc* paramDesc = structDesc->GetParamDesc(paramIndex);
@@ -1292,7 +1274,7 @@ TEST(StringConversion, Vec4)
 
 TEST(FindObjParamByPath, Simple)
 {
-	unique_ptr<rs2::StructDesc> structDesc = SimpleStruct::CreateStructDesc();
+	const rs2::StructDesc* structDesc = SimpleStruct::GetStructDesc();
 	SimpleStruct s;
 	s.UintParam = 123;
 
@@ -1311,8 +1293,8 @@ TEST(FindObjParamByPath, Simple)
 
 TEST(FindObjParamByPath, SubStruct)
 {
-	unique_ptr<rs2::StructDesc> simpleStructDesc = SimpleStruct::CreateStructDesc();
-	unique_ptr<rs2::StructDesc> containerStructDesc = ContainerStruct::CreateStructDesc(simpleStructDesc.get());
+	const rs2::StructDesc* simpleStructDesc = SimpleStruct::GetStructDesc();
+	unique_ptr<rs2::StructDesc> containerStructDesc = ContainerStruct::CreateStructDesc(simpleStructDesc);
 	ContainerStruct s;
 	s.StructParam.UintParam = 123;
 
@@ -1331,8 +1313,8 @@ TEST(FindObjParamByPath, SubStruct)
 
 TEST(FindObjParamByPath, FixedSizeArray)
 {
-	unique_ptr<rs2::StructDesc> simpleStructDesc = SimpleStruct::CreateStructDesc();
-	unique_ptr<rs2::StructDesc> containerStructDesc = ContainerStruct::CreateStructDesc(simpleStructDesc.get());
+	const rs2::StructDesc* simpleStructDesc = SimpleStruct::GetStructDesc();
+	unique_ptr<rs2::StructDesc> containerStructDesc = ContainerStruct::CreateStructDesc(simpleStructDesc);
 	ContainerStruct s;
 	s.FixedSizeArrayParam[2] = 123;
 
@@ -1351,8 +1333,8 @@ TEST(FindObjParamByPath, FixedSizeArray)
 
 TEST(FindObjParamByPath, Negative)
 {
-	unique_ptr<rs2::StructDesc> simpleStructDesc = SimpleStruct::CreateStructDesc();
-	unique_ptr<rs2::StructDesc> containerStructDesc = ContainerStruct::CreateStructDesc(simpleStructDesc.get());
+	const rs2::StructDesc* simpleStructDesc = SimpleStruct::GetStructDesc();
+	unique_ptr<rs2::StructDesc> containerStructDesc = ContainerStruct::CreateStructDesc(simpleStructDesc);
 	ContainerStruct s;
 
 	void* param = nullptr;

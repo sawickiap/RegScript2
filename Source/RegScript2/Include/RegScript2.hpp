@@ -753,3 +753,55 @@ inline size_t FixedSizeArrayParamDesc::GetParamSize() const
 }
 
 } // namespace RegScript2
+
+#define RS2_GET_STRUCT_DESC_BEGIN(structName) \
+	static unique_ptr<rs2::StructDesc> structDesc; \
+	if(!structDesc) \
+	{ \
+		typedef structName Struct_t; \
+		structDesc = std::make_unique<rs2::StructDesc>(L#structName, sizeof(structName));
+
+#define RS2_GET_STRUCT_DESC_END() \
+	} \
+	return structDesc.get();
+
+#define RS2_ADD_PARAM_BOOL(paramName, storage, ...) \
+	structDesc->AddParam( \
+		L#paramName, \
+		offsetof(Struct_t, paramName), \
+		new rs2::BoolParamDesc(storage, __VA_ARGS__));
+#define RS2_ADD_PARAM_UINT(paramName, storage, ...) \
+	structDesc->AddParam( \
+		L#paramName, \
+		offsetof(Struct_t, paramName), \
+		new rs2::UintParamDesc(storage, __VA_ARGS__));
+#define RS2_ADD_PARAM_FLOAT(paramName, storage, ...) \
+	structDesc->AddParam( \
+		L#paramName, \
+		offsetof(Struct_t, paramName), \
+		new rs2::FloatParamDesc(storage, __VA_ARGS__));
+#define RS2_ADD_PARAM_STRING(paramName, storage, ...) \
+	structDesc->AddParam( \
+		L#paramName, \
+		offsetof(Struct_t, paramName), \
+		new rs2::StringParamDesc(storage, __VA_ARGS__));
+#define RS2_ADD_PARAM_GAMETIME(paramName, storage, ...) \
+	structDesc->AddParam( \
+		L#paramName, \
+		offsetof(Struct_t, paramName), \
+		new rs2::GameTimeParamDesc(storage, __VA_ARGS__));
+#define RS2_ADD_PARAM_VEC2(paramName, storage, ...) \
+	structDesc->AddParam( \
+		L#paramName, \
+		offsetof(Struct_t, paramName), \
+		new rs2::Vec2ParamDesc(storage, __VA_ARGS__));
+#define RS2_ADD_PARAM_VEC3(paramName, storage, ...) \
+	structDesc->AddParam( \
+		L#paramName, \
+		offsetof(Struct_t, paramName), \
+		new rs2::Vec3ParamDesc(storage, __VA_ARGS__));
+#define RS2_ADD_PARAM_VEC4(paramName, storage, ...) \
+	structDesc->AddParam( \
+		L#paramName, \
+		offsetof(Struct_t, paramName), \
+		new rs2::Vec4ParamDesc(storage, __VA_ARGS__));
