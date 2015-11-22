@@ -4,6 +4,9 @@ namespace RegScript2
 {
 
 const wchar_t* const ERR_MSG_VALUE_NOT_CONST = L"Value is not constant.";
+static const wchar_t* const ERR_MSG_PARAM_READ_ONLY = L"Parameter is read-only.";
+static const wchar_t* const ERR_MSG_PARAM_WRITE_ONLY = L"Paramter is write-only.";
+static const wchar_t* const ERR_MSG_CANNOT_SET_VALUE = L"Cannot set parameter value.";
 
 ////////////////////////////////////////////////////////////////////////////////
 // class BoolParam
@@ -170,6 +173,21 @@ const ParamDesc* StructDesc::GetParamDesc(size_t index) const
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+// class ParamDesc
+
+void ParamDesc::CheckCanWrite() const
+{
+	if(!CanWrite())
+		throw common::Error(ERR_MSG_PARAM_READ_ONLY, __TFILE__, __LINE__);
+}
+
+void ParamDesc::CheckCanRead() const
+{
+	if(!CanRead())
+		throw common::Error(ERR_MSG_PARAM_WRITE_ONLY, __TFILE__, __LINE__);
+}
+
+////////////////////////////////////////////////////////////////////////////////
 // class FixedSizeArrayParamDesc
 
 void* FixedSizeArrayParamDesc::AccessElement(void* param, size_t elementIndex) const
@@ -186,6 +204,8 @@ const void* FixedSizeArrayParamDesc::AccessElement(const void* param, size_t ele
 
 void FixedSizeArrayParamDesc::SetToDefault(void* param) const
 {
+	CheckCanWrite();
+
 	char* element = (char*)param;
 	size_t elementSize = m_ElementParamDesc->GetParamSize();
 	for(size_t i = 0; i < m_Count; ++i)
@@ -197,6 +217,9 @@ void FixedSizeArrayParamDesc::SetToDefault(void* param) const
 
 void FixedSizeArrayParamDesc::Copy(void* dstParam, const void* srcParam) const
 {
+	CheckCanRead();
+	CheckCanWrite();
+
 	char* dstElement = (char*)dstParam;
 	const char* srcElement = (const char*)srcParam;
 	size_t elementSize = m_ElementParamDesc->GetParamSize();
@@ -210,6 +233,8 @@ void FixedSizeArrayParamDesc::Copy(void* dstParam, const void* srcParam) const
 
 void FixedSizeArrayParamDesc::SetElementToDefault(void* param, size_t index) const
 {
+	CheckCanWrite();
+
 	size_t elementSize = m_ElementParamDesc->GetParamSize();
 	size_t elementOffset = index * elementSize;
 	char* element = (char*)param + elementOffset;
@@ -218,6 +243,9 @@ void FixedSizeArrayParamDesc::SetElementToDefault(void* param, size_t index) con
 
 void FixedSizeArrayParamDesc::CopyElement(void* dstParam, const void* srcParam, size_t index) const
 {
+	CheckCanRead();
+	CheckCanWrite();
+
 	size_t elementSize = m_ElementParamDesc->GetParamSize();
 	size_t elementOffset = index * elementSize;
 	char* dstElement = (char*)dstParam + elementOffset;
@@ -244,6 +272,8 @@ size_t BoolParamDesc::GetParamSize() const
 
 bool BoolParamDesc::IsConst(const void* param) const
 {
+	if(!CanRead())
+		return false;
 	switch(GetStorage())
 	{
 	case STORAGE::RAW:
@@ -258,6 +288,8 @@ bool BoolParamDesc::IsConst(const void* param) const
 
 bool BoolParamDesc::TryGetConst(Value_t& outValue, const void* param) const
 {
+	if(!CanRead())
+		return false;
 	switch(GetStorage())
 	{
 	case STORAGE::RAW:
@@ -280,8 +312,10 @@ BoolParamDesc::Value_t BoolParamDesc::GetConst(const void* param) const
 		throw common::Error(ERR_MSG_VALUE_NOT_CONST, __TFILE__, __LINE__);
 }
 
-void BoolParamDesc::SetConst(void* param, Value_t value) const
+bool BoolParamDesc::TrySetConst(void* param, Value_t value) const
 {
+	if(!CanWrite())
+		return false;
 	switch(GetStorage())
 	{
 	case STORAGE::RAW:
@@ -293,10 +327,19 @@ void BoolParamDesc::SetConst(void* param, Value_t value) const
 	default:
 		assert(0);
 	}
+	return true;
+}
+
+void BoolParamDesc::SetConst(void* param, Value_t value) const
+{
+	if(!TrySetConst(param, value))
+		throw common::Error(ERR_MSG_CANNOT_SET_VALUE, __TFILE__, __LINE__);
 }
 
 void BoolParamDesc::Copy(void* dstParam, const void* srcParam) const
 {
+	CheckCanRead();
+	CheckCanWrite();
 	switch(GetStorage())
 	{
 	case STORAGE::RAW:
@@ -353,6 +396,8 @@ size_t UintParamDesc::GetParamSize() const
 
 bool UintParamDesc::IsConst(const void* param) const
 {
+	if(!CanRead())
+		return false;
 	switch(GetStorage())
 	{
 	case STORAGE::RAW:
@@ -367,6 +412,8 @@ bool UintParamDesc::IsConst(const void* param) const
 
 bool UintParamDesc::TryGetConst(Value_t& outValue, const void* param) const
 {
+	if(!CanRead())
+		return false;
 	switch(GetStorage())
 	{
 	case STORAGE::RAW:
@@ -389,8 +436,10 @@ UintParamDesc::Value_t UintParamDesc::GetConst(const void* param) const
 		throw common::Error(ERR_MSG_VALUE_NOT_CONST, __TFILE__, __LINE__);
 }
 
-void UintParamDesc::SetConst(void* param, Value_t value) const
+bool UintParamDesc::TrySetConst(void* param, Value_t value) const
 {
+	if(!CanWrite())
+		return false;
 	switch(GetStorage())
 	{
 	case STORAGE::RAW:
@@ -402,10 +451,20 @@ void UintParamDesc::SetConst(void* param, Value_t value) const
 	default:
 		assert(0);
 	}
+	return true;
+}
+
+void UintParamDesc::SetConst(void* param, Value_t value) const
+{
+	if(!TrySetConst(param, value))
+		throw common::Error(ERR_MSG_CANNOT_SET_VALUE, __TFILE__, __LINE__);
 }
 
 void UintParamDesc::Copy(void* dstParam, const void* srcParam) const
 {
+	CheckCanRead();
+	CheckCanWrite();
+
 	switch(GetStorage())
 	{
 	case STORAGE::RAW:
@@ -474,6 +533,8 @@ size_t FloatParamDesc::GetParamSize() const
 
 bool FloatParamDesc::IsConst(const void* param) const
 {
+	if(!CanRead())
+		return false;
 	switch(GetStorage())
 	{
 	case STORAGE::RAW:
@@ -488,6 +549,8 @@ bool FloatParamDesc::IsConst(const void* param) const
 
 bool FloatParamDesc::TryGetConst(Value_t& outValue, const void* param) const
 {
+	if(!CanRead())
+		return false;
 	switch(GetStorage())
 	{
 	case STORAGE::RAW:
@@ -510,8 +573,10 @@ FloatParamDesc::Value_t FloatParamDesc::GetConst(const void* param) const
 		throw common::Error(ERR_MSG_VALUE_NOT_CONST, __TFILE__, __LINE__);
 }
 
-void FloatParamDesc::SetConst(void* param, Value_t value) const
+bool FloatParamDesc::TrySetConst(void* param, Value_t value) const
 {
+	if(!CanWrite())
+		return false;
 	switch(GetStorage())
 	{
 	case STORAGE::RAW:
@@ -523,10 +588,20 @@ void FloatParamDesc::SetConst(void* param, Value_t value) const
 	default:
 		assert(0);
 	}
+	return true;
+}
+
+void FloatParamDesc::SetConst(void* param, Value_t value) const
+{
+	if(!TrySetConst(param, value))
+		throw common::Error(ERR_MSG_CANNOT_SET_VALUE, __TFILE__, __LINE__);
 }
 
 void FloatParamDesc::Copy(void* dstParam, const void* srcParam) const
 {
+	CheckCanRead();
+	CheckCanWrite();
+
 	switch(GetStorage())
 	{
 	case STORAGE::RAW:
@@ -623,6 +698,8 @@ size_t StringParamDesc::GetParamSize() const
 
 bool StringParamDesc::IsConst(const void* param) const
 {
+	if(!CanRead())
+		return false;
 	switch(GetStorage())
 	{
 	case STORAGE::RAW:
@@ -637,6 +714,8 @@ bool StringParamDesc::IsConst(const void* param) const
 
 bool StringParamDesc::TryGetConst(Value_t& outValue, const void* param) const
 {
+	if(!CanRead())
+		return false;
 	switch(GetStorage())
 	{
 	case STORAGE::RAW:
@@ -656,8 +735,10 @@ void StringParamDesc::GetConst(StringParamDesc::Value_t& outValue, const void* p
 		throw common::Error(ERR_MSG_VALUE_NOT_CONST, __TFILE__, __LINE__);
 }
 
-void StringParamDesc::SetConst(void* param, const wchar_t* value) const
+bool StringParamDesc::TrySetConst(void* param, const wchar_t* value) const
 {
+	if(!CanWrite())
+		return false;
 	switch(GetStorage())
 	{
 	case STORAGE::RAW:
@@ -669,10 +750,20 @@ void StringParamDesc::SetConst(void* param, const wchar_t* value) const
 	default:
 		assert(0);
 	}
+	return true;
+}
+
+void StringParamDesc::SetConst(void* param, const wchar_t* value) const
+{
+	if(!TrySetConst(param, value))
+		throw common::Error(ERR_MSG_CANNOT_SET_VALUE, __TFILE__, __LINE__);
 }
 
 void StringParamDesc::Copy(void* dstParam, const void* srcParam) const
 {
+	CheckCanRead();
+	CheckCanWrite();
+
 	switch(GetStorage())
 	{
 	case STORAGE::RAW:
@@ -716,6 +807,8 @@ size_t GameTimeParamDesc::GetParamSize() const
 
 bool GameTimeParamDesc::IsConst(const void* param) const
 {
+	if(!CanRead())
+		return false;
 	switch(GetStorage())
 	{
 	case STORAGE::RAW:
@@ -730,6 +823,8 @@ bool GameTimeParamDesc::IsConst(const void* param) const
 
 bool GameTimeParamDesc::TryGetConst(Value_t& outValue, const void* param) const
 {
+	if(!CanRead())
+		return false;
 	switch(GetStorage())
 	{
 	case STORAGE::RAW:
@@ -752,8 +847,10 @@ GameTimeParamDesc::Value_t GameTimeParamDesc::GetConst(const void* param) const
 		throw common::Error(ERR_MSG_VALUE_NOT_CONST, __TFILE__, __LINE__);
 }
 
-void GameTimeParamDesc::SetConst(void* param, Value_t value) const
+bool GameTimeParamDesc::TrySetConst(void* param, Value_t value) const
 {
+	if(!CanWrite())
+		return false;
 	switch(GetStorage())
 	{
 	case STORAGE::RAW:
@@ -765,10 +862,19 @@ void GameTimeParamDesc::SetConst(void* param, Value_t value) const
 	default:
 		assert(0);
 	}
+	return true;
+}
+
+void GameTimeParamDesc::SetConst(void* param, Value_t value) const
+{
+	if(!TrySetConst(param, value))
+		throw common::Error(ERR_MSG_CANNOT_SET_VALUE, __TFILE__, __LINE__);
 }
 
 void GameTimeParamDesc::Copy(void* dstParam, const void* srcParam) const
 {
+	CheckCanRead();
+	CheckCanWrite();
 	switch(GetStorage())
 	{
 	case STORAGE::RAW:
@@ -831,6 +937,8 @@ size_t VecParamDesc<Vec_t>::GetParamSize() const
 template<typename Vec_t>
 bool VecParamDesc<Vec_t>::IsConst(const void* param) const
 {
+	if(!CanRead())
+		return false;
 	switch(GetStorage())
 	{
 	case STORAGE::RAW:
@@ -846,6 +954,8 @@ bool VecParamDesc<Vec_t>::IsConst(const void* param) const
 template<typename Vec_t>
 bool VecParamDesc<Vec_t>::TryGetConst(Value_t& outValue, const void* param) const
 {
+	if(!CanRead())
+		return false;
 	switch(GetStorage())
 	{
 	case STORAGE::RAW:
@@ -867,8 +977,10 @@ void VecParamDesc<Vec_t>::GetConst(Value_t& outValue, const void* param) const
 }
 
 template<typename Vec_t>
-void VecParamDesc<Vec_t>::SetConst(void* param, const Value_t& value) const
+bool VecParamDesc<Vec_t>::TrySetConst(void* param, const Value_t& value) const
 {
+	if(!CanWrite())
+		return false;
 	switch(GetStorage())
 	{
 	case STORAGE::RAW:
@@ -880,11 +992,22 @@ void VecParamDesc<Vec_t>::SetConst(void* param, const Value_t& value) const
 	default:
 		assert(0);
 	}
+	return true;
+}
+
+template<typename Vec_t>
+void VecParamDesc<Vec_t>::SetConst(void* param, const Value_t& value) const
+{
+	if(!TrySetConst(param, value))
+		throw common::Error(ERR_MSG_CANNOT_SET_VALUE, __TFILE__, __LINE__);
 }
 
 template<typename Vec_t>
 void VecParamDesc<Vec_t>::Copy(void* dstParam, const void* srcParam) const
 {
+	CheckCanRead();
+	CheckCanWrite();
+
 	switch(GetStorage())
 	{
 	case STORAGE::RAW:

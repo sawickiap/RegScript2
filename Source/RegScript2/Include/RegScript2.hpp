@@ -173,18 +173,29 @@ typedef VecParam<common::VEC4> Vec4Param;
 class ParamDesc
 {
 public:
+	enum FLAGS
+	{
+		FLAG_READ_ONLY  = 0x01,
+		FLAG_WRITE_ONLY = 0x02,
+	};
+
 	enum class STORAGE
 	{
 		RAW, // Value of destination type, e.g. unsigned, float.
 		PARAM, // Value of appropriate parameter type, e.g. UintParam, FloatParam.
 	};
 
-	ParamDesc(STORAGE storage) : m_Storage(storage) { }
+	uint32_t Flags;
+
+	ParamDesc(STORAGE storage) : Flags(0), m_Storage(storage) { }
 	virtual ~ParamDesc() { }
 
 	STORAGE GetStorage() const { return m_Storage; }
 
 	virtual size_t GetParamSize() const = 0;
+	virtual bool CanWrite() const = 0;
+	virtual bool CanRead() const = 0;
+	// If !CanRead, returns false.
 	virtual bool IsConst(const void* param) const = 0;
 	virtual void SetToDefault(void* param) const = 0;
 	virtual void Copy(void* dstParam, const void* srcParam) const = 0;
@@ -192,6 +203,12 @@ public:
 	virtual bool ToString(std::wstring& out, const void* srcParam) const { out.clear(); return false; }
 	// If not supported or parse error, returns false and leaves value undefined.
 	virtual bool Parse(void* dstParam, const wchar_t* src) const { return false; }
+
+protected:
+	// If !CanWrite(), throws appropriate exception.
+	void CheckCanWrite() const;
+	// If !CanRead(), throws appropriate exception.
+	void CheckCanRead() const;
 
 private:
 	STORAGE m_Storage;
@@ -209,7 +226,9 @@ public:
 	const StructDesc* GetStructDesc() const { return m_StructDesc; }
 
 	inline virtual size_t GetParamSize() const;
-	virtual bool IsConst(const void* param) const { return true; }
+	virtual bool CanWrite() const { return !(Flags & FLAG_READ_ONLY); }
+	virtual bool CanRead() const { return !(Flags & FLAG_WRITE_ONLY); }
+	virtual bool IsConst(const void* param) const { return CanRead(); }
 	inline virtual void SetToDefault(void* param) const;
 	inline virtual void Copy(void* dstParam, const void* srcParam) const;
 
@@ -234,7 +253,9 @@ public:
 	const void* AccessElement(const void* param, size_t elementIndex) const;
 
 	inline virtual size_t GetParamSize() const;
-	virtual bool IsConst(const void* param) const { return true; }
+	virtual bool CanWrite() const { return !(Flags & FLAG_READ_ONLY); }
+	virtual bool CanRead() const { return !(Flags & FLAG_WRITE_ONLY); }
+	virtual bool IsConst(const void* param) const { return CanRead(); }
 	virtual void SetToDefault(void* param) const;
 	virtual void Copy(void* dstParam, const void* srcParam) const;
 
@@ -281,9 +302,12 @@ public:
 	Param_t* AccessAsParam(void* param) const { Param_t* result = (Param_t*)param; result->CheckMagicNumber(); return result; }
 	const Param_t* AccessAsParam(const void* param) const { const Param_t* result = (const Param_t*)param; result->CheckMagicNumber(); return result; }
 
+	virtual bool CanWrite() const { return !(Flags & FLAG_READ_ONLY); }
+	virtual bool CanRead() const { return !(Flags & FLAG_WRITE_ONLY); }
 	virtual bool IsConst(const void* param) const;
 	bool TryGetConst(Value_t& outValue, const void* param) const;
 	Value_t GetConst(const void* param) const;
+	bool TrySetConst(void* param, Value_t value) const;
 	void SetConst(void* param, Value_t value) const;
 
 	virtual void SetToDefault(void* param) const { SetConst(param, DefaultValue); }
@@ -323,9 +347,12 @@ public:
 	Param_t* AccessAsParam(void* param) const { Param_t* result = (Param_t*)param; result->CheckMagicNumber(); return result; }
 	const Param_t* AccessAsParam(const void* param) const { const Param_t* result = (const Param_t*)param; result->CheckMagicNumber(); return result; }
 
+	virtual bool CanWrite() const { return !(Flags & FLAG_READ_ONLY); }
+	virtual bool CanRead() const { return !(Flags & FLAG_WRITE_ONLY); }
 	virtual bool IsConst(const void* param) const;
 	bool TryGetConst(Value_t& outValue, const void* param) const;
 	Value_t GetConst(const void* param) const;
+	bool TrySetConst(void* param, Value_t value) const;
 	void SetConst(void* param, Value_t value) const;
 
 	virtual void SetToDefault(void* param) const { SetConst(param, DefaultValue); }
@@ -366,9 +393,12 @@ public:
 	Param_t* AccessAsParam(void* param) const { Param_t* result = (Param_t*)param; result->CheckMagicNumber(); return result; }
 	const Param_t* AccessAsParam(const void* param) const { const Param_t* result = (const Param_t*)param; result->CheckMagicNumber(); return result; }
 
+	virtual bool CanWrite() const { return !(Flags & FLAG_READ_ONLY); }
+	virtual bool CanRead() const { return !(Flags & FLAG_WRITE_ONLY); }
 	virtual bool IsConst(const void* param) const;
 	bool TryGetConst(Value_t& outValue, const void* param) const;
 	Value_t GetConst(const void* param) const;
+	bool TrySetConst(void* param, Value_t value) const;
 	void SetConst(void* param, Value_t value) const;
 
 	virtual void SetToDefault(void* param) const { SetConst(param, DefaultValue); }
@@ -397,10 +427,14 @@ public:
 	Param_t* AccessAsParam(void* param) const { Param_t* result = (Param_t*)param; result->CheckMagicNumber(); return result; }
 	const Param_t* AccessAsParam(const void* param) const { const Param_t* result = (const Param_t*)param; result->CheckMagicNumber(); return result; }
 
+	virtual bool CanWrite() const { return !(Flags & FLAG_READ_ONLY); }
+	virtual bool CanRead() const { return !(Flags & FLAG_WRITE_ONLY); }
 	virtual bool IsConst(const void* param) const;
 	bool TryGetConst(Value_t& outValue, const void* param) const;
 	void GetConst(Value_t& outValue, const void* param) const;
+	bool TrySetConst(void* param, const wchar_t* value) const;
 	void SetConst(void* param, const wchar_t* value) const;
+	bool TrySetConst(void* param, const std::wstring& value) const { return TrySetConst(param, value.c_str()); }
 	void SetConst(void* param, const std::wstring& value) const { SetConst(param, value.c_str()); }
 
 	virtual void SetToDefault(void* param) const { SetConst(param, DefaultValue.c_str()); }
@@ -429,9 +463,12 @@ public:
 	Param_t* AccessAsParam(void* param) const { Param_t* result = (Param_t*)param; result->CheckMagicNumber(); return result; }
 	const Param_t* AccessAsParam(const void* param) const { const Param_t* result = (const Param_t*)param; result->CheckMagicNumber(); return result; }
 
+	virtual bool CanWrite() const { return !(Flags & FLAG_READ_ONLY); }
+	virtual bool CanRead() const { return !(Flags & FLAG_WRITE_ONLY); }
 	virtual bool IsConst(const void* param) const;
 	bool TryGetConst(Value_t& outValue, const void* param) const;
 	Value_t GetConst(const void* param) const;
+	bool TrySetConst(void* param, Value_t value) const;
 	void SetConst(void* param, Value_t value) const;
 
 	virtual void SetToDefault(void* param) const { SetConst(param, DefaultValue); }
@@ -461,9 +498,12 @@ public:
 	Param_t* AccessAsParam(void* param) const { Param_t* result = (Param_t*)param; result->CheckMagicNumber(); return result; }
 	const Param_t* AccessAsParam(const void* param) const { const Param_t* result = (const Param_t*)param; result->CheckMagicNumber(); return result; }
 
+	virtual bool CanWrite() const { return !(Flags & FLAG_READ_ONLY); }
+	virtual bool CanRead() const { return !(Flags & FLAG_WRITE_ONLY); }
 	virtual bool IsConst(const void* param) const;
 	bool TryGetConst(Value_t& outValue, const void* param) const;
 	void GetConst(Value_t& outValue, const void* param) const;
+	bool TrySetConst(void* param, const Value_t& value) const;
 	void SetConst(void* param, const Value_t& value) const;
 
 	virtual void SetToDefault(void* param) const { SetConst(param, DefaultValue); }
@@ -533,11 +573,16 @@ inline size_t StructParamDesc::GetParamSize() const
 
 inline void StructParamDesc::SetToDefault(void* param) const
 {
+	CheckCanWrite();
+	
 	m_StructDesc->SetObjToDefault(param);
 }
 
 inline void StructParamDesc::Copy(void* dstParam, const void* srcParam) const
 {
+	CheckCanRead();
+	CheckCanWrite();
+	
 	m_StructDesc->CopyObj(dstParam, srcParam);
 }
 
