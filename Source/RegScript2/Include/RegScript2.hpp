@@ -754,17 +754,27 @@ inline size_t FixedSizeArrayParamDesc::GetParamSize() const
 
 } // namespace RegScript2
 
-#define RS2_GET_STRUCT_DESC_BEGIN(structName) \
+#define RS2_GET_STRUCT_DESC_BEGIN(structName, ...) \
 	static unique_ptr<rs2::StructDesc> structDesc; \
 	if(!structDesc) \
 	{ \
 		typedef structName Struct_t; \
-		structDesc = std::make_unique<rs2::StructDesc>(L#structName, sizeof(structName));
+		structDesc = std::make_unique<rs2::StructDesc>(L#structName, sizeof(structName), __VA_ARGS__);
 
 #define RS2_GET_STRUCT_DESC_END() \
 	} \
 	return structDesc.get();
 
+#define RS2_ADD_PARAM_STRUCT(paramName, nestedStructDesc) \
+	structDesc->AddParam( \
+		L#paramName, \
+		offsetof(Struct_t, paramName), \
+		new rs2::StructParamDesc(nestedStructDesc));
+#define RS2_ADD_PARAM_FIXED_SIZE_ARRAY(paramName, elementStructDesc, count) \
+	structDesc->AddParam( \
+		L#paramName, \
+		offsetof(Struct_t, paramName), \
+		new rs2::FixedSizeArrayParamDesc(elementStructDesc, count));
 #define RS2_ADD_PARAM_BOOL(paramName, storage, ...) \
 	structDesc->AddParam( \
 		L#paramName, \
@@ -805,3 +815,44 @@ inline size_t FixedSizeArrayParamDesc::GetParamSize() const
 		L#paramName, \
 		offsetof(Struct_t, paramName), \
 		new rs2::Vec4ParamDesc(storage, __VA_ARGS__));
+
+#define RS2_ADD_PARAM_BOOL_FUNCTION(paramName, getFunc, setFunc, ...) \
+	structDesc->AddParam( \
+		L#paramName, \
+		0, \
+		new rs2::BoolParamDesc(getFunc, setFunc, __VA_ARGS__));
+#define RS2_ADD_PARAM_UINT_FUNCTION(paramName, getFunc, setFunc, ...) \
+	structDesc->AddParam( \
+		L#paramName, \
+		0, \
+		new rs2::UintParamDesc(getFunc, setFunc, __VA_ARGS__));
+#define RS2_ADD_PARAM_FLOAT_FUNCTION(paramName, getFunc, setFunc, ...) \
+	structDesc->AddParam( \
+		L#paramName, \
+		0, \
+		new rs2::FloatParamDesc(getFunc, setFunc, __VA_ARGS__));
+#define RS2_ADD_PARAM_STRING_FUNCTION(paramName, getFunc, setFunc, ...) \
+	structDesc->AddParam( \
+		L#paramName, \
+		0, \
+		new rs2::StringParamDesc(getFunc, setFunc, __VA_ARGS__));
+#define RS2_ADD_PARAM_GAMETIME_FUNCTION(paramName, getFunc, setFunc, ...) \
+	structDesc->AddParam( \
+		L#paramName, \
+		0, \
+		new rs2::GameTimeParamDesc(getFunc, setFunc, __VA_ARGS__));
+#define RS2_ADD_PARAM_VEC2_FUNCTION(paramName, getFunc, setFunc, ...) \
+	structDesc->AddParam( \
+		L#paramName, \
+		0, \
+		new rs2::Vec2ParamDesc(getFunc, setFunc, __VA_ARGS__));
+#define RS2_ADD_PARAM_VEC3_FUNCTION(paramName, getFunc, setFunc, ...) \
+	structDesc->AddParam( \
+		L#paramName, \
+		0, \
+		new rs2::Vec3ParamDesc(getFunc, setFunc, __VA_ARGS__));
+#define RS2_ADD_PARAM_VEC4_FUNCTION(paramName, getFunc, setFunc, ...) \
+	structDesc->AddParam( \
+		L#paramName, \
+		0, \
+		new rs2::Vec4ParamDesc(getFunc, setFunc, __VA_ARGS__));

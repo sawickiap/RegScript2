@@ -619,7 +619,7 @@ public:
 	void SetCustomValues();
 	void CheckCustomValues() const;
 
-	static unique_ptr<rs2::StructDesc> CreateStructDesc();
+	static const rs2::StructDesc* GetStructDesc();
 };
 
 void MathStruct::CheckDefaultValues() const
@@ -655,30 +655,18 @@ void MathStruct::CheckCustomValues() const
 	EXPECT_EQ(VEC4(11.f, 22.f, 33.f, 44.f), v4);
 }
 
-unique_ptr<rs2::StructDesc> MathStruct::CreateStructDesc()
+const rs2::StructDesc* MathStruct::GetStructDesc()
 {
-	unique_ptr<rs2::StructDesc> structDesc =
-		std::make_unique<rs2::StructDesc>(L"MathStruct", sizeof(MathStruct));
-
-	structDesc->AddParam(
-		L"Vec2Param",
-		offsetof(MathStruct, Vec2Param),
-		new rs2::Vec2ParamDesc(rs2::ParamDesc::STORAGE::PARAM, VEC2(1.f, 2.f)));
-	structDesc->AddParam(
-		L"Vec3Param",
-		offsetof(MathStruct, Vec3Param),
-		new rs2::Vec3ParamDesc(rs2::ParamDesc::STORAGE::PARAM, VEC3(1.f, 2.f, 3.f)));
-	structDesc->AddParam(
-		L"Vec4Param",
-		offsetof(MathStruct, Vec4Param),
-		new rs2::Vec4ParamDesc(rs2::ParamDesc::STORAGE::PARAM, VEC4(1.f, 2.f, 3.f, 4.f)));
-
-	return structDesc;
+	RS2_GET_STRUCT_DESC_BEGIN(MathStruct);
+	RS2_ADD_PARAM_VEC2(Vec2Param, rs2::ParamDesc::STORAGE::PARAM, VEC2(1.f, 2.f));
+	RS2_ADD_PARAM_VEC3(Vec3Param, rs2::ParamDesc::STORAGE::PARAM, VEC3(1.f, 2.f, 3.f));
+	RS2_ADD_PARAM_VEC4(Vec4Param, rs2::ParamDesc::STORAGE::PARAM, VEC4(1.f, 2.f, 3.f, 4.f));
+	RS2_GET_STRUCT_DESC_END();
 }
 
 TEST(Math, SetObjToDefault)
 {
-	unique_ptr<rs2::StructDesc> structDesc = MathStruct::CreateStructDesc();
+	const rs2::StructDesc* structDesc = MathStruct::GetStructDesc();
 	MathStruct obj;
 	structDesc->SetObjToDefault(&obj);
 	obj.CheckDefaultValues();
@@ -686,7 +674,7 @@ TEST(Math, SetObjToDefault)
 
 TEST(Math, CopyObj)
 {
-	unique_ptr<rs2::StructDesc> structDesc = MathStruct::CreateStructDesc();
+	const rs2::StructDesc* structDesc = MathStruct::GetStructDesc();
 	MathStruct obj1, obj2;
 	obj1.SetCustomValues();
 	structDesc->CopyObj(&obj2, &obj1);
@@ -707,7 +695,7 @@ TEST(Math, TokDocLoad)
 		rootNode.LoadChildren(tokenizer);
 	}
 
-	unique_ptr<rs2::StructDesc> structDesc = MathStruct::CreateStructDesc();
+	const rs2::StructDesc* structDesc = MathStruct::GetStructDesc();
 	MathStruct obj;
 	bool ok = rs2::LoadObjFromTokDoc(
 		&obj,
@@ -741,7 +729,7 @@ TEST(Math, TokDocLoadAlternative)
 		rootNode.LoadChildren(tokenizer);
 	}
 
-	unique_ptr<rs2::StructDesc> structDesc = MathStruct::CreateStructDesc();
+	const rs2::StructDesc* structDesc = MathStruct::GetStructDesc();
 	MathStruct obj;
 	bool ok = rs2::LoadObjFromTokDoc(
 		&obj,
@@ -772,7 +760,7 @@ TEST(Math, TokDocLoadRequiredButNotFound)
 		rootNode.LoadChildren(tokenizer);
 	}
 
-	unique_ptr<rs2::StructDesc> structDesc = MathStruct::CreateStructDesc();
+	const rs2::StructDesc* structDesc = MathStruct::GetStructDesc();
 	MathStruct obj;
 	EXPECT_THROW(
 		rs2::LoadObjFromTokDoc(
@@ -798,7 +786,7 @@ TEST(Math, DISABLED_TokDocLoadOptionalCorrectButNotCorrect)
 		rootNode.LoadChildren(tokenizer);
 	}
 
-	unique_ptr<rs2::StructDesc> structDesc = MathStruct::CreateStructDesc();
+	const rs2::StructDesc* structDesc = MathStruct::GetStructDesc();
 	MathStruct obj;
 	EXPECT_THROW(
 		rs2::LoadObjFromTokDoc(
@@ -820,7 +808,7 @@ TEST(Math, TokDocLoadOptionalAndNotFound)
 		rootNode.LoadChildren(tokenizer);
 	}
 
-	unique_ptr<rs2::StructDesc> structDesc = MathStruct::CreateStructDesc();
+	const rs2::StructDesc* structDesc = MathStruct::GetStructDesc();
 	MathStruct obj;
 	CPrinter printer;
 	bool ok = rs2::LoadObjFromTokDoc(
@@ -892,7 +880,7 @@ TEST(TokDoc, ContainerStructTokDocSaveLoad)
 
 TEST(TokDoc, MathStructTokDocSaveLoad)
 {
-	unique_ptr<rs2::StructDesc> structDesc = MathStruct::CreateStructDesc();
+	const rs2::StructDesc* structDesc = MathStruct::GetStructDesc();
 	common::tokdoc::Node rootNode;
 	{
 		MathStruct obj;
@@ -987,7 +975,7 @@ TEST(TokDoc, ContainerStructTokDocStringSaveLoad)
 
 TEST(TokDoc, MathStructTokDocStringSaveLoad)
 {
-	unique_ptr<rs2::StructDesc> structDesc = MathStruct::CreateStructDesc();
+	const rs2::StructDesc* structDesc = MathStruct::GetStructDesc();
 	wstring doc;
 	{
 		MathStruct obj;
@@ -1205,7 +1193,7 @@ TEST(StringConversion, GameTime)
 
 TEST(StringConversion, Vec2)
 {
-	unique_ptr<rs2::StructDesc> structDesc = MathStruct::CreateStructDesc();
+	const rs2::StructDesc* structDesc = MathStruct::GetStructDesc();
 	size_t paramIndex = structDesc->Find(L"Vec2Param");
 	ASSERT_NE((size_t)-1, paramIndex);
 	const rs2::ParamDesc* paramDesc = structDesc->GetParamDesc(paramIndex);
@@ -1227,7 +1215,7 @@ TEST(StringConversion, Vec2)
 
 TEST(StringConversion, Vec3)
 {
-	unique_ptr<rs2::StructDesc> structDesc = MathStruct::CreateStructDesc();
+	const rs2::StructDesc* structDesc = MathStruct::GetStructDesc();
 	size_t paramIndex = structDesc->Find(L"Vec3Param");
 	ASSERT_NE((size_t)-1, paramIndex);
 	const rs2::ParamDesc* paramDesc = structDesc->GetParamDesc(paramIndex);
@@ -1250,7 +1238,7 @@ TEST(StringConversion, Vec3)
 
 TEST(StringConversion, Vec4)
 {
-	unique_ptr<rs2::StructDesc> structDesc = MathStruct::CreateStructDesc();
+	const rs2::StructDesc* structDesc = MathStruct::GetStructDesc();
 	size_t paramIndex = structDesc->Find(L"Vec4Param");
 	ASSERT_NE((size_t)-1, paramIndex);
 	const rs2::ParamDesc* paramDesc = structDesc->GetParamDesc(paramIndex);
@@ -1721,16 +1709,11 @@ TEST(Funcs, SetObjToDefault_GetSet)
 {
 	RawValuesStruct obj;
 
-	rs2::StructDesc structDesc(L"FuncStruct", 0);
+	rs2::StructDesc structDescObj(L"FuncStruct", 0);
+	rs2::StructDesc* structDesc = &structDescObj;
 
-	rs2::BoolParamDesc* boolParamDesc;
-	rs2::UintParamDesc* uintParamDesc;
-	rs2::FloatParamDesc* floatParamDesc;
-	rs2::StringParamDesc* stringParamDesc;
-	rs2::GameTimeParamDesc* gameTimeParamDesc;
-	rs2::Vec4ParamDesc* vec4ParamDesc;
-
-	structDesc.AddParam(L"BoolParam", 0, boolParamDesc = new rs2::BoolParamDesc(
+	RS2_ADD_PARAM_BOOL_FUNCTION(
+		BoolParam,
 		[&obj](bool& outValue, const void* obj) -> bool
 		{
 			outValue = ((const RawValuesStruct*)obj)->BoolValue; return true;
@@ -1739,8 +1722,9 @@ TEST(Funcs, SetObjToDefault_GetSet)
 		{
 			((RawValuesStruct*)obj)->BoolValue = value; return true;
 		},
-		true));
-	structDesc.AddParam(L"UintParam", 0, uintParamDesc = new rs2::UintParamDesc(
+		true);
+	RS2_ADD_PARAM_UINT_FUNCTION(
+		UintParam,
 		[&obj](uint& outValue, const void* obj) -> bool
 		{
 			outValue = ((const RawValuesStruct*)obj)->UintValue; return true;
@@ -1749,8 +1733,9 @@ TEST(Funcs, SetObjToDefault_GetSet)
 		{
 			((RawValuesStruct*)obj)->UintValue = value; return true;
 		},
-		890));
-	structDesc.AddParam(L"FloatParam", 0, floatParamDesc = new rs2::FloatParamDesc(
+		890);
+	RS2_ADD_PARAM_FLOAT_FUNCTION(
+		FloatParam,
 		[&obj](float& outValue, const void* obj) -> bool
 		{
 			outValue = ((const RawValuesStruct*)obj)->FloatValue; return true;
@@ -1759,8 +1744,9 @@ TEST(Funcs, SetObjToDefault_GetSet)
 		{
 			((RawValuesStruct*)obj)->FloatValue = value; return true;
 		},
-		10.5f));
-	structDesc.AddParam(L"StringParam", 0, stringParamDesc = new rs2::StringParamDesc(
+		10.5f);
+	RS2_ADD_PARAM_STRING_FUNCTION(
+		StringParam,
 		[&obj](wstring& outValue, const void* obj) -> bool
 		{
 			outValue = ((const RawValuesStruct*)obj)->StringValue; return true;
@@ -1769,8 +1755,9 @@ TEST(Funcs, SetObjToDefault_GetSet)
 		{
 			((RawValuesStruct*)obj)->StringValue = value; return true;
 		},
-		L"String default"));
-	structDesc.AddParam(L"GameTimeParam", 0, gameTimeParamDesc = new rs2::GameTimeParamDesc(
+		L"String default");
+	RS2_ADD_PARAM_GAMETIME_FUNCTION(
+		GameTimeParam,
 		[&obj](GameTime& outValue, const void* obj) -> bool
 		{
 			outValue = ((const RawValuesStruct*)obj)->GameTimeValue; return true;
@@ -1779,8 +1766,9 @@ TEST(Funcs, SetObjToDefault_GetSet)
 		{
 			((RawValuesStruct*)obj)->GameTimeValue = value; return true;
 		},
-		GameTime(-1000000)));
-	structDesc.AddParam(L"Vec4Param", 0, vec4ParamDesc = new rs2::Vec4ParamDesc(
+		GameTime(-1000000));
+	RS2_ADD_PARAM_VEC4_FUNCTION(
+		Vec4Param,
 		[&obj](VEC4& outValue, const void* obj) -> bool
 		{
 			outValue = ((const RawValuesStruct*)obj)->Vec4Value; return true;
@@ -1789,9 +1777,16 @@ TEST(Funcs, SetObjToDefault_GetSet)
 		{
 			((RawValuesStruct*)obj)->Vec4Value = value; return true;
 		},
-		VEC4(4.f, 3.f, 2.f, 1.f)));
+		VEC4(4.f, 3.f, 2.f, 1.f));
 
-	structDesc.SetObjToDefault(&obj);
+	rs2::BoolParamDesc* boolParamDesc = (rs2::BoolParamDesc*)structDesc->Params[0].get();
+	rs2::UintParamDesc* uintParamDesc = (rs2::UintParamDesc*)structDesc->Params[1].get();
+	rs2::FloatParamDesc* floatParamDesc = (rs2::FloatParamDesc*)structDesc->Params[2].get();
+	rs2::StringParamDesc* stringParamDesc = (rs2::StringParamDesc*)structDesc->Params[3].get();
+	rs2::GameTimeParamDesc* gameTimeParamDesc = (rs2::GameTimeParamDesc*)structDesc->Params[4].get();
+	rs2::Vec4ParamDesc* vec4ParamDesc = (rs2::Vec4ParamDesc*)structDesc->Params[5].get();
+
+	structDesc->SetObjToDefault(&obj);
 
 	EXPECT_EQ(true, obj.BoolValue);
 	EXPECT_EQ(890, obj.UintValue);
