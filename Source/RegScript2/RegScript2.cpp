@@ -507,19 +507,13 @@ bool UintParamDesc::ToString(std::wstring& out, const void* srcParam) const
 	Value_t value;
 	if(TryGetConst(value, srcParam))
 	{
-		switch(Format)
+		if(Flags & FLAG_FORMAT_HEX)
 		{
-		case FORMAT_DEC:
-			common::UintToStr(&out, value, 10);
-			break;
-		case FORMAT_HEX:
 			common::UintToStr(&out, value, 16);
 			out.insert(0, L"0x");
-			break;
-		default:
-			assert(0);
-			return false;
 		}
+		else
+			common::UintToStr(&out, value, 10);
 		return true;
 	}
 	else
@@ -663,13 +657,13 @@ bool FloatParamDesc::ToString(std::wstring& out, const void* srcParam) const
 	{
 		if(isfinite(value))
 		{
-			if(Format == FORMAT_PERCENT)
+			if(Flags & FLAG_FORMAT_PERCENT)
 			{
 				SthToStr<float>(&out, value * 100.f);
 				out += L'%';
 				return true;
 			}
-			if(Format == FORMAT_DB && value > 0.f)
+			else if (Flags & FLAG_FORMAT_DB && value > 0.f)
 			{
 				SthToStr<float>(&out, PowerToDB(value));
 				out += L"dB";

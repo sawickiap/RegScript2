@@ -1395,11 +1395,11 @@ unique_ptr<rs2::StructDesc> RawValuesStruct::CreateStructDesc(uint32_t additiona
 	structDesc->AddParam(
 		L"UintValue",
 		offsetof(RawValuesStruct, UintValue),
-		new rs2::UintParamDesc(rs2::STORAGE::RAW, 123, 0, rs2::UintParamDesc::FORMAT_DEC, 100, 200));
+		new rs2::UintParamDesc(rs2::STORAGE::RAW, 123, 0, 100, 200));
 	structDesc->AddParam(
 		L"FloatValue",
 		offsetof(RawValuesStruct, FloatValue),
-		new rs2::FloatParamDesc(rs2::STORAGE::RAW, 3.14f, 0, rs2::FloatParamDesc::FORMAT_NORMAL, 100.f, 200.f));
+		new rs2::FloatParamDesc(rs2::STORAGE::RAW, 3.14f, 0, 100.f, 200.f));
 	structDesc->AddParam(
 		L"StringValue",
 		offsetof(RawValuesStruct, StringValue),

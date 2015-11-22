@@ -345,13 +345,10 @@ public:
 	SetFunc_t SetFunc;
 
 	// It only affects the way of displaying value.
-	enum FORMAT
+	enum UINT_FLAGS
 	{
-		FORMAT_DEC,
-		FORMAT_HEX, // "0x" prefix.
-		FORMAT_COUNT
+		FLAG_FORMAT_HEX = 0x10000, // "0x" prefix.
 	};
-	FORMAT Format;
 
 	Value_t MinValue, MaxValue;
 
@@ -359,11 +356,9 @@ public:
 		STORAGE storage,
 		Value_t defaultValue = Value_t(),
 		uint32_t flags = 0,
-		FORMAT format = FORMAT_DEC,
 		Value_t minValue = 0,
 		Value_t maxValue = UINT_MAX) :
 		TypedParamDesc<uint32_t>(storage, defaultValue, flags),
-		Format(format),
 		MinValue(minValue),
 		MaxValue(maxValue)
 	{
@@ -373,20 +368,15 @@ public:
 		SetFunc_t setFunc,
 		Value_t defaultValue = Value_t(),
 		uint32_t flags = 0,
-		FORMAT format = FORMAT_DEC,
 		Value_t minValue = 0,
 		Value_t maxValue = UINT_MAX) :
 		TypedParamDesc<uint32_t>(STORAGE::FUNCTION, defaultValue, flags),
 		GetFunc(getFunc),
 		SetFunc(setFunc),
-		Format(format),
 		MinValue(minValue),
 		MaxValue(maxValue)
 	{
 	}
-
-	UintParamDesc& SetFormat(FORMAT format) { Format = format; return *this; }
-	UintParamDesc& SetMinMax(Value_t min, Value_t max) { MinValue = min; MaxValue = max; return *this; }
 
 	virtual size_t GetParamSize() const;
 
@@ -424,14 +414,11 @@ public:
 	SetFunc_t SetFunc;
 
 	// It only affects the way of displaying value.
-	enum FORMAT
+	enum FLOAT_FLAGS
 	{
-		FORMAT_NORMAL,
-		FORMAT_PERCENT, // Doesn't limit range to 0..1.
-		FORMAT_DB,      // Value must be positive. Otherwise NORMAL is used.
-		FORMAT_COUNT
+		FLAG_FORMAT_PERCENT = 0x20000, // Doesn't limit range to 0..1.
+		FLAG_FORMAT_DB      = 0x40000, // Value must be positive. Otherwise NORMAL is used.
 	};
-	FORMAT Format;
 
 	// When min-max values are active, non-finite values are also not accepted.
 	Value_t MinValue, MaxValue;
@@ -440,11 +427,9 @@ public:
 		STORAGE storage,
 		Value_t defaultValue = Value_t(),
 		uint32_t flags = 0,
-		FORMAT format = FORMAT_NORMAL,
 		Value_t minValue = -FLT_MAX,
 		Value_t maxValue = FLT_MAX) :
 		TypedParamDesc<float>(storage, defaultValue, flags),
-		Format(format),
 		MinValue(minValue),
 		MaxValue(maxValue)
 	{
@@ -454,20 +439,15 @@ public:
 		SetFunc_t setFunc,
 		Value_t defaultValue = Value_t(),
 		uint32_t flags = 0,
-		FORMAT format = FORMAT_NORMAL,
 		Value_t minValue = -FLT_MAX,
 		Value_t maxValue = FLT_MAX) :
 		TypedParamDesc<float>(STORAGE::FUNCTION, defaultValue, flags),
 		GetFunc(getFunc),
 		SetFunc(setFunc),
-		Format(format),
 		MinValue(minValue),
 		MaxValue(maxValue)
 	{
 	}
-
-	FloatParamDesc& SetFormat(FORMAT format) { Format = format; return *this; }
-	FloatParamDesc& SetMinMax(Value_t min, Value_t max) { MinValue = min; MaxValue = max; return *this; }
 
 	virtual size_t GetParamSize() const;
 
@@ -577,8 +557,6 @@ public:
 	{
 	}
 
-	GameTimeParamDesc& SetMinMax(Value_t min, Value_t max) { MinValue = min; MaxValue = max; return *this; }
-
 	virtual size_t GetParamSize() const;
 
 	bool ValueInMinMax(Value_t value) const { return value <= MaxValue && value >= MinValue; }
@@ -642,8 +620,6 @@ public:
 		MaxValue(maxValue)
 	{
 	}
-
-	VecParamDesc<Vec_t>& SetMinMax(const Value_t& min, const Value_t& max) { MinValue = min; MaxValue = max; return *this; }
 
 	virtual size_t GetParamSize() const;
 
