@@ -3,6 +3,122 @@
 namespace RegScript2
 {
 
+const wchar_t* const ERR_MSG_VALUE_NOT_CONST = L"Value is not constant.";
+
+////////////////////////////////////////////////////////////////////////////////
+// class BoolParam
+
+bool BoolParam::GetConst() const
+{
+	bool value;
+	if(TryGetConst(value))
+		return value;
+	else
+		throw common::Error(ERR_MSG_VALUE_NOT_CONST, __TFILE__, __LINE__);
+}
+
+void BoolParam::SetConst(bool value)
+{
+	// TODO
+	m_ValueType = VALUE_TYPE::CONSTANT;
+	m_Value = value;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// class UintParam
+
+uint32_t UintParam::GetConst() const
+{
+	uint32_t value;
+	if(TryGetConst(value))
+		return value;
+	else
+		throw common::Error(ERR_MSG_VALUE_NOT_CONST, __TFILE__, __LINE__);
+}
+
+void UintParam::SetConst(uint32_t value)
+{
+	// TODO
+	m_ValueType = VALUE_TYPE::CONSTANT;
+	m_Value = value;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// class FloatParam
+
+float FloatParam::GetConst() const
+{
+	float value;
+	if(TryGetConst(value))
+		return value;
+	else
+		throw common::Error(ERR_MSG_VALUE_NOT_CONST, __TFILE__, __LINE__);
+}
+
+void FloatParam::SetConst(float value)
+{
+	// TODO
+	m_ValueType = VALUE_TYPE::CONSTANT;
+	m_Value = value;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// class StringParam
+
+void StringParam::GetConst(std::wstring& outValue) const
+{
+	if(!TryGetConst(outValue))
+		throw common::Error(ERR_MSG_VALUE_NOT_CONST, __TFILE__, __LINE__);
+}
+
+void StringParam::SetConst(const wchar_t* value)
+{
+	// TODO
+	m_ValueType = VALUE_TYPE::CONSTANT;
+	m_Value = value;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// class GameTimeParam
+
+common::GameTime GameTimeParam::GetConst() const
+{
+	common::GameTime value;
+	if(TryGetConst(value))
+		return value;
+	else
+		throw common::Error(ERR_MSG_VALUE_NOT_CONST, __TFILE__, __LINE__);
+}
+
+void GameTimeParam::SetConst(common::GameTime value)
+{
+	// TODO
+	m_ValueType = VALUE_TYPE::CONSTANT;
+	m_Value = value;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// template class VecParam
+
+template class VecParam<common::VEC2>;
+template class VecParam<common::VEC3>;
+template class VecParam<common::VEC4>;
+
+template<typename Vec_t>
+void VecParam<Vec_t>::GetConst(Vec_t& outValue) const
+{
+	if(!TryGetConst(outValue))
+		throw common::Error(ERR_MSG_VALUE_NOT_CONST, __TFILE__, __LINE__);
+}
+
+template<typename Vec_t>
+void VecParam<Vec_t>::SetConst(const Vec_t& value)
+{
+	// TODO
+	m_ValueType = VALUE_TYPE::CONSTANT;
+	m_Value = value;
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // class ClassDesc
 
@@ -112,83 +228,354 @@ void FixedSizeArrayParamDesc::CopyElement(void* dstParam, const void* srcParam, 
 ////////////////////////////////////////////////////////////////////////////////
 // class BoolParamDesc
 
-bool BoolParamDesc::ToString(wstring& out, const void* srcParam) const
+size_t BoolParamDesc::GetParamSize() const
 {
-	const Param_t* param = (const Param_t*)srcParam;
-	SthToStr<bool>(&out, param->Value);
-	return true;
+	switch(GetStorage())
+	{
+	case STORAGE::RAW:
+		return sizeof(Value_t);
+	case STORAGE::PARAM:
+		return sizeof(Param_t);
+	default:
+		assert(0);
+		return 0;
+	}
+}
+
+bool BoolParamDesc::IsConst(const void* param) const
+{
+	switch(GetStorage())
+	{
+	case STORAGE::RAW:
+		return true;
+	case STORAGE::PARAM:
+		return AccessAsParam(param)->IsConst();
+	default:
+		assert(0);
+		return true;
+	}
+}
+
+bool BoolParamDesc::TryGetConst(Value_t& outValue, const void* param) const
+{
+	switch(GetStorage())
+	{
+	case STORAGE::RAW:
+		outValue = *AccessAsRaw(param);
+		return true;
+	case STORAGE::PARAM:
+		return AccessAsParam(param)->TryGetConst(outValue);
+	default:
+		assert(0);
+		return false;
+	}
+}
+
+BoolParamDesc::Value_t BoolParamDesc::GetConst(const void* param) const
+{
+	Value_t value;
+	if(TryGetConst(value, param))
+		return value;
+	else
+		throw common::Error(ERR_MSG_VALUE_NOT_CONST, __TFILE__, __LINE__);
+}
+
+void BoolParamDesc::SetConst(void* param, Value_t value) const
+{
+	switch(GetStorage())
+	{
+	case STORAGE::RAW:
+		*AccessAsRaw(param) = value;
+		break;
+	case STORAGE::PARAM:
+		AccessAsParam(param)->SetConst(value);
+		break;
+	default:
+		assert(0);
+	}
+}
+
+void BoolParamDesc::Copy(void* dstParam, const void* srcParam) const
+{
+	switch(GetStorage())
+	{
+	case STORAGE::RAW:
+		*AccessAsRaw(dstParam) = *AccessAsRaw(srcParam);
+		break;
+	case STORAGE::PARAM:
+		*AccessAsParam(dstParam) = *AccessAsParam(srcParam);
+		break;
+	default:
+		assert(0);
+	}
+}
+
+bool BoolParamDesc::ToString(std::wstring& out, const void* srcParam) const
+{
+	Value_t value;
+	if(TryGetConst(value, srcParam))
+	{
+		SthToStr<bool>(&out, value);
+		return true;
+	}
+	else
+		return false;
 }
 
 bool BoolParamDesc::Parse(void* dstParam, const wchar_t* src) const
 {
-	Param_t* param = (Param_t*)dstParam;
-	return StrToSth<bool>(&param->Value, src);
+	Value_t value;
+	if(StrToSth<bool>(&value, src))
+	{
+		SetConst(dstParam, value);
+		return true;
+	}
+	else
+		return false;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // class UintParamDesc
 
-bool UintParamDesc::ToString(wstring& out, const void* srcParam) const
+size_t UintParamDesc::GetParamSize() const
 {
-	const Param_t* param = (const Param_t*)srcParam;
-	switch(Format)
+	switch(GetStorage())
 	{
-	case FORMAT_DEC:
-		common::UintToStr(&out, param->Value, 10);
-		break;
-	case FORMAT_HEX:
-		common::UintToStr(&out, param->Value, 16);
-		out.insert(0, L"0x");
-		break;
+	case STORAGE::RAW:
+		return sizeof(Value_t);
+	case STORAGE::PARAM:
+		return sizeof(Param_t);
+	default:
+		assert(0);
+		return 0;
+	}
+}
+
+bool UintParamDesc::IsConst(const void* param) const
+{
+	switch(GetStorage())
+	{
+	case STORAGE::RAW:
+		return true;
+	case STORAGE::PARAM:
+		return AccessAsParam(param)->IsConst();
+	default:
+		assert(0);
+		return true;
+	}
+}
+
+bool UintParamDesc::TryGetConst(Value_t& outValue, const void* param) const
+{
+	switch(GetStorage())
+	{
+	case STORAGE::RAW:
+		outValue = *AccessAsRaw(param);
+		return true;
+	case STORAGE::PARAM:
+		return AccessAsParam(param)->TryGetConst(outValue);
 	default:
 		assert(0);
 		return false;
 	}
-	return true;
+}
+
+UintParamDesc::Value_t UintParamDesc::GetConst(const void* param) const
+{
+	Value_t value;
+	if(TryGetConst(value, param))
+		return value;
+	else
+		throw common::Error(ERR_MSG_VALUE_NOT_CONST, __TFILE__, __LINE__);
+}
+
+void UintParamDesc::SetConst(void* param, Value_t value) const
+{
+	switch(GetStorage())
+	{
+	case STORAGE::RAW:
+		*AccessAsRaw(param) = value;
+		break;
+	case STORAGE::PARAM:
+		AccessAsParam(param)->SetConst(value);
+		break;
+	default:
+		assert(0);
+	}
+}
+
+void UintParamDesc::Copy(void* dstParam, const void* srcParam) const
+{
+	switch(GetStorage())
+	{
+	case STORAGE::RAW:
+		*AccessAsRaw(dstParam) = *AccessAsRaw(srcParam);
+		break;
+	case STORAGE::PARAM:
+		*AccessAsParam(dstParam) = *AccessAsParam(srcParam);
+		break;
+	default:
+		assert(0);
+	}
+}
+
+bool UintParamDesc::ToString(std::wstring& out, const void* srcParam) const
+{
+	Value_t value;
+	if(TryGetConst(value, srcParam))
+	{
+		switch(Format)
+		{
+		case FORMAT_DEC:
+			common::UintToStr(&out, value, 10);
+			break;
+		case FORMAT_HEX:
+			common::UintToStr(&out, value, 16);
+			out.insert(0, L"0x");
+			break;
+		default:
+			assert(0);
+			return false;
+		}
+		return true;
+	}
+	else
+		return false;
 }
 
 bool UintParamDesc::Parse(void* dstParam, const wchar_t* src) const
 {
-	Param_t* param = (Param_t*)dstParam;
-	return StrToUint_AutoBase(param->Value, src);
+	Value_t value;
+	if(StrToUint_AutoBase<Value_t>(value, src))
+	{
+		SetConst(dstParam, value);
+		return true;
+	}
+	else
+		return false;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // class FloatParamDesc
 
-bool FloatParamDesc::ToString(wstring& out, const void* srcParam) const
+size_t FloatParamDesc::GetParamSize() const
 {
-	const FloatParam* floatParam = (const FloatParam*)srcParam;
-	const float value = floatParam->Value;
-	if(isfinite(value))
+	switch(GetStorage())
 	{
-		if(Format == FORMAT_PERCENT)
-		{
-			SthToStr<float>(&out, value * 100.f);
-			out += L'%';
-			return true;
-		}
-		if(Format == FORMAT_DB && value > 0.f)
-		{
-			SthToStr<float>(&out, PowerToDB(value));
-			out += L"dB";
-			return true;
-		}
+	case STORAGE::RAW:
+		return sizeof(Value_t);
+	case STORAGE::PARAM:
+		return sizeof(Param_t);
+	default:
+		assert(0);
+		return 0;
 	}
-	SthToStr<float>(&out, value);
-	return true;
+}
+
+bool FloatParamDesc::IsConst(const void* param) const
+{
+	switch(GetStorage())
+	{
+	case STORAGE::RAW:
+		return true;
+	case STORAGE::PARAM:
+		return AccessAsParam(param)->IsConst();
+	default:
+		assert(0);
+		return true;
+	}
+}
+
+bool FloatParamDesc::TryGetConst(Value_t& outValue, const void* param) const
+{
+	switch(GetStorage())
+	{
+	case STORAGE::RAW:
+		outValue = *AccessAsRaw(param);
+		return true;
+	case STORAGE::PARAM:
+		return AccessAsParam(param)->TryGetConst(outValue);
+	default:
+		assert(0);
+		return false;
+	}
+}
+
+FloatParamDesc::Value_t FloatParamDesc::GetConst(const void* param) const
+{
+	Value_t value;
+	if(TryGetConst(value, param))
+		return value;
+	else
+		throw common::Error(ERR_MSG_VALUE_NOT_CONST, __TFILE__, __LINE__);
+}
+
+void FloatParamDesc::SetConst(void* param, Value_t value) const
+{
+	switch(GetStorage())
+	{
+	case STORAGE::RAW:
+		*AccessAsRaw(param) = value;
+		break;
+	case STORAGE::PARAM:
+		AccessAsParam(param)->SetConst(value);
+		break;
+	default:
+		assert(0);
+	}
+}
+
+void FloatParamDesc::Copy(void* dstParam, const void* srcParam) const
+{
+	switch(GetStorage())
+	{
+	case STORAGE::RAW:
+		*AccessAsRaw(dstParam) = *AccessAsRaw(srcParam);
+		break;
+	case STORAGE::PARAM:
+		*AccessAsParam(dstParam) = *AccessAsParam(srcParam);
+		break;
+	default:
+		assert(0);
+	}
+}
+
+bool FloatParamDesc::ToString(std::wstring& out, const void* srcParam) const
+{
+	Value_t value;
+	if(TryGetConst(value, srcParam))
+	{
+		if(isfinite(value))
+		{
+			if(Format == FORMAT_PERCENT)
+			{
+				SthToStr<float>(&out, value * 100.f);
+				out += L'%';
+				return true;
+			}
+			if(Format == FORMAT_DB && value > 0.f)
+			{
+				SthToStr<float>(&out, PowerToDB(value));
+				out += L"dB";
+				return true;
+			}
+		}
+		SthToStr<float>(&out, value);
+		return true;
+	}
+	else
+		return false;
 }
 
 bool FloatParamDesc::Parse(void* dstParam, const wchar_t* src) const
 {
-	Param_t* param = (Param_t*)dstParam;
+	Value_t value;
 	if(common::StrEnds(src, L"%", true))
 	{
 		wstring newStr { src, src + wcslen(src) - 1 };
-		float val;
-		if(StrToSth<float>(&val, newStr))
+		if(StrToSth<float>(&value, newStr))
 		{
-			param->Value = val * 0.01f;
+			SetConst(dstParam, value * 0.01f);
 			return true;
 		}
 		else
@@ -197,98 +584,344 @@ bool FloatParamDesc::Parse(void* dstParam, const wchar_t* src) const
 	else if(common::StrEnds(src, L"dB", false))
 	{
 		wstring newStr(src, src + wcslen(src) - 2);
-		float val;
-		if(StrToSth<float>(&val, newStr))
+		if(StrToSth<float>(&value, newStr))
 		{
-			param->Value = DBToPower(val);
+			SetConst(dstParam, DBToPower(value));
 			return true;
 		}
 		else
 			return false;
 	}
 	else
-		return StrToSth<float>(&param->Value, src);
+	{
+		if(StrToSth<float>(&value, src))
+		{
+			SetConst(dstParam, value);
+			return true;
+		}
+		else
+			return false;
+	}
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // class StringParamDesc
 
-bool StringParamDesc::ToString(wstring& out, const void* srcParam) const
+size_t StringParamDesc::GetParamSize() const
 {
-	const StringParam* stringParam = (const StringParam*)srcParam;
-	out = stringParam->Value;
-	return true;
+	switch(GetStorage())
+	{
+	case STORAGE::RAW:
+		return sizeof(Value_t);
+	case STORAGE::PARAM:
+		return sizeof(Param_t);
+	default:
+		assert(0);
+		return 0;
+	}
+}
+
+bool StringParamDesc::IsConst(const void* param) const
+{
+	switch(GetStorage())
+	{
+	case STORAGE::RAW:
+		return true;
+	case STORAGE::PARAM:
+		return AccessAsParam(param)->IsConst();
+	default:
+		assert(0);
+		return true;
+	}
+}
+
+bool StringParamDesc::TryGetConst(Value_t& outValue, const void* param) const
+{
+	switch(GetStorage())
+	{
+	case STORAGE::RAW:
+		outValue = *AccessAsRaw(param);
+		return true;
+	case STORAGE::PARAM:
+		return AccessAsParam(param)->TryGetConst(outValue);
+	default:
+		assert(0);
+		return false;
+	}
+}
+
+void StringParamDesc::GetConst(StringParamDesc::Value_t& outValue, const void* param) const
+{
+	if(!TryGetConst(outValue, param))
+		throw common::Error(ERR_MSG_VALUE_NOT_CONST, __TFILE__, __LINE__);
+}
+
+void StringParamDesc::SetConst(void* param, const wchar_t* value) const
+{
+	switch(GetStorage())
+	{
+	case STORAGE::RAW:
+		*AccessAsRaw(param) = value;
+		break;
+	case STORAGE::PARAM:
+		AccessAsParam(param)->SetConst(value);
+		break;
+	default:
+		assert(0);
+	}
+}
+
+void StringParamDesc::Copy(void* dstParam, const void* srcParam) const
+{
+	switch(GetStorage())
+	{
+	case STORAGE::RAW:
+		*AccessAsRaw(dstParam) = *AccessAsRaw(srcParam);
+		break;
+	case STORAGE::PARAM:
+		*AccessAsParam(dstParam) = *AccessAsParam(srcParam);
+		break;
+	default:
+		assert(0);
+	}
+}
+
+bool StringParamDesc::ToString(std::wstring& out, const void* srcParam) const
+{
+	return TryGetConst(out, srcParam);
 }
 
 bool StringParamDesc::Parse(void* dstParam, const wchar_t* src) const
 {
-	Param_t* param = (Param_t*)dstParam;
-	param->Value = src;
+	SetConst(dstParam, src);
 	return true;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // class GameTimeParamDesc
 
-bool GameTimeParamDesc::ToString(wstring& out, const void* srcParam) const
+size_t GameTimeParamDesc::GetParamSize() const
 {
-	const GameTimeParam* gameTimeParam = (const GameTimeParam*)srcParam;
-	GameTimeToFriendlyStr(out, gameTimeParam->Value);
-	return true;
+	switch(GetStorage())
+	{
+	case STORAGE::RAW:
+		return sizeof(Value_t);
+	case STORAGE::PARAM:
+		return sizeof(Param_t);
+	default:
+		assert(0);
+		return 0;
+	}
+}
+
+bool GameTimeParamDesc::IsConst(const void* param) const
+{
+	switch(GetStorage())
+	{
+	case STORAGE::RAW:
+		return true;
+	case STORAGE::PARAM:
+		return AccessAsParam(param)->IsConst();
+	default:
+		assert(0);
+		return true;
+	}
+}
+
+bool GameTimeParamDesc::TryGetConst(Value_t& outValue, const void* param) const
+{
+	switch(GetStorage())
+	{
+	case STORAGE::RAW:
+		outValue = *AccessAsRaw(param);
+		return true;
+	case STORAGE::PARAM:
+		return AccessAsParam(param)->TryGetConst(outValue);
+	default:
+		assert(0);
+		return false;
+	}
+}
+
+GameTimeParamDesc::Value_t GameTimeParamDesc::GetConst(const void* param) const
+{
+	Value_t value;
+	if(TryGetConst(value, param))
+		return value;
+	else
+		throw common::Error(ERR_MSG_VALUE_NOT_CONST, __TFILE__, __LINE__);
+}
+
+void GameTimeParamDesc::SetConst(void* param, Value_t value) const
+{
+	switch(GetStorage())
+	{
+	case STORAGE::RAW:
+		*AccessAsRaw(param) = value;
+		break;
+	case STORAGE::PARAM:
+		AccessAsParam(param)->SetConst(value);
+		break;
+	default:
+		assert(0);
+	}
+}
+
+void GameTimeParamDesc::Copy(void* dstParam, const void* srcParam) const
+{
+	switch(GetStorage())
+	{
+	case STORAGE::RAW:
+		*AccessAsRaw(dstParam) = *AccessAsRaw(srcParam);
+		break;
+	case STORAGE::PARAM:
+		*AccessAsParam(dstParam) = *AccessAsParam(srcParam);
+		break;
+	default:
+		assert(0);
+	}
+}
+
+bool GameTimeParamDesc::ToString(std::wstring& out, const void* srcParam) const
+{
+	Value_t value;
+	if(TryGetConst(value, srcParam))
+	{
+		GameTimeToFriendlyStr(out, value);
+		return true;
+	}
+	else
+		return false;
 }
 
 bool GameTimeParamDesc::Parse(void* dstParam, const wchar_t* src) const
 {
-	Param_t* param = (Param_t*)dstParam;
-	return FriendlyStrToGameTime(param->Value, src);
+	Value_t value;
+	if(FriendlyStrToGameTime(value, src))
+	{
+		SetConst(dstParam, value);
+		return true;
+	}
+	else
+		return false;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// class Vec2ParamDesc
+// template class VecParamDesc
 
-bool Vec2ParamDesc::ToString(wstring& out, const void* srcParam) const
+template class VecParamDesc<common::VEC2>;
+template class VecParamDesc<common::VEC3>;
+template class VecParamDesc<common::VEC4>;
+
+template<typename Vec_t>
+size_t VecParamDesc<Vec_t>::GetParamSize() const
 {
-	const Param_t* param = (const Param_t*)srcParam;
-	SthToStr<common::VEC2>(&out, param->Value);
-	return true;
+	switch(GetStorage())
+	{
+	case STORAGE::RAW:
+		return sizeof(Value_t);
+	case STORAGE::PARAM:
+		return sizeof(Param_t);
+	default:
+		assert(0);
+		return 0;
+	}
 }
 
-bool Vec2ParamDesc::Parse(void* dstParam, const wchar_t* src) const
+template<typename Vec_t>
+bool VecParamDesc<Vec_t>::IsConst(const void* param) const
 {
-	Param_t* param = (Param_t*)dstParam;
-	return StrToSth<common::VEC2>(&param->Value, src);
+	switch(GetStorage())
+	{
+	case STORAGE::RAW:
+		return true;
+	case STORAGE::PARAM:
+		return AccessAsParam(param)->IsConst();
+	default:
+		assert(0);
+		return true;
+	}
 }
 
-////////////////////////////////////////////////////////////////////////////////
-// class Vec3ParamDesc
-
-bool Vec3ParamDesc::ToString(wstring& out, const void* srcParam) const
+template<typename Vec_t>
+bool VecParamDesc<Vec_t>::TryGetConst(Value_t& outValue, const void* param) const
 {
-	const Param_t* param = (const Param_t*)srcParam;
-	SthToStr<common::VEC3>(&out, param->Value);
-	return true;
+	switch(GetStorage())
+	{
+	case STORAGE::RAW:
+		outValue = *AccessAsRaw(param);
+		return true;
+	case STORAGE::PARAM:
+		return AccessAsParam(param)->TryGetConst(outValue);
+	default:
+		assert(0);
+		return false;
+	}
 }
 
-bool Vec3ParamDesc::Parse(void* dstParam, const wchar_t* src) const
+template<typename Vec_t>
+void VecParamDesc<Vec_t>::GetConst(Value_t& outValue, const void* param) const
 {
-	Param_t* param = (Param_t*)dstParam;
-	return StrToSth<common::VEC3>(&param->Value, src);
+	if(!TryGetConst(outValue, param))
+		throw common::Error(ERR_MSG_VALUE_NOT_CONST, __TFILE__, __LINE__);
 }
 
-////////////////////////////////////////////////////////////////////////////////
-// class Vec2ParamDesc
-
-bool Vec4ParamDesc::ToString(wstring& out, const void* srcParam) const
+template<typename Vec_t>
+void VecParamDesc<Vec_t>::SetConst(void* param, const Value_t& value) const
 {
-	const Param_t* param = (const Param_t*)srcParam;
-	SthToStr<common::VEC4>(&out, param->Value);
-	return true;
+	switch(GetStorage())
+	{
+	case STORAGE::RAW:
+		*AccessAsRaw(param) = value;
+		break;
+	case STORAGE::PARAM:
+		AccessAsParam(param)->SetConst(value);
+		break;
+	default:
+		assert(0);
+	}
 }
 
-bool Vec4ParamDesc::Parse(void* dstParam, const wchar_t* src) const
+template<typename Vec_t>
+void VecParamDesc<Vec_t>::Copy(void* dstParam, const void* srcParam) const
 {
-	Param_t* param = (Param_t*)dstParam;
-	return StrToSth<common::VEC4>(&param->Value, src);
+	switch(GetStorage())
+	{
+	case STORAGE::RAW:
+		*AccessAsRaw(dstParam) = *AccessAsRaw(srcParam);
+		break;
+	case STORAGE::PARAM:
+		*AccessAsParam(dstParam) = *AccessAsParam(srcParam);
+		break;
+	default:
+		assert(0);
+	}
+}
+
+template<typename Vec_t>
+bool VecParamDesc<Vec_t>::ToString(std::wstring& out, const void* srcParam) const
+{
+	Value_t value;
+	if(TryGetConst(value, srcParam))
+	{
+		SthToStr<Value_t>(&out, value);
+		return true;
+	}
+	else
+		return false;
+}
+
+template<typename Vec_t>
+bool VecParamDesc<Vec_t>::Parse(void* dstParam, const wchar_t* src) const
+{
+	Value_t value;
+	if(StrToSth<Value_t>(&value, src))
+	{
+		SetConst(dstParam, value);
+		return true;
+	}
+	else
+		return false;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

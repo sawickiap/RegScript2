@@ -133,29 +133,33 @@ public:
 
 void SimpleStruct::CheckDefaultValues() const
 {
-	EXPECT_EQ(true, BoolParam.Value);
-	EXPECT_EQ(123, UintParam.Value);
-	EXPECT_EQ(3.14f, FloatParam.Value);
-	EXPECT_EQ(L"StringDefault", StringParam.Value);
-	EXPECT_EQ(common::MillisecondsToGameTime(1023), GameTimeParam.Value);
+	EXPECT_EQ(true, BoolParam.GetConst());
+	EXPECT_EQ(123, UintParam.GetConst());
+	EXPECT_EQ(3.14f, FloatParam.GetConst());
+	wstring str;
+	StringParam.GetConst(str);
+	EXPECT_EQ(L"StringDefault", str);
+	EXPECT_EQ(common::MillisecondsToGameTime(1023), GameTimeParam.GetConst());
 }
 
 void SimpleStruct::SetCustomValues()
 {
-	BoolParam.Value = false;
-	UintParam.Value = 124;
-	FloatParam.Value = 13.5f;
-	StringParam.Value = L"ABC";
-	GameTimeParam.Value = common::MillisecondsToGameTime(123);
+	BoolParam = false;
+	UintParam = 124;
+	FloatParam = 13.5f;
+	StringParam = L"ABC";
+	GameTimeParam = common::MillisecondsToGameTime(123);
 }
 
 void SimpleStruct::CheckCustomValues() const
 {
-	EXPECT_FALSE(BoolParam.Value);
-	EXPECT_EQ(124, UintParam.Value);
-	EXPECT_EQ(13.5f, FloatParam.Value);
-	EXPECT_EQ(L"ABC", StringParam.Value);
-	EXPECT_EQ(common::MillisecondsToGameTime(123), GameTimeParam.Value);
+	EXPECT_FALSE(BoolParam.GetConst());
+	EXPECT_EQ(124, UintParam.GetConst());
+	EXPECT_EQ(13.5f, FloatParam.GetConst());
+	wstring str;
+	StringParam.GetConst(str);
+	EXPECT_EQ(L"ABC", str);
+	EXPECT_EQ(common::MillisecondsToGameTime(123), GameTimeParam.GetConst());
 }
 
 unique_ptr<rs2::StructDesc> SimpleStruct::CreateStructDesc()
@@ -166,23 +170,23 @@ unique_ptr<rs2::StructDesc> SimpleStruct::CreateStructDesc()
 	structDesc->AddParam(
 		L"BoolParam",
 		offsetof(SimpleStruct, BoolParam),
-		rs2::BoolParamDesc().SetDefault(true));
+		rs2::BoolParamDesc(rs2::ParamDesc::STORAGE::PARAM).SetDefault(true));
 	structDesc->AddParam(
 		L"UintParam",
 		offsetof(SimpleStruct, UintParam),
-		rs2::UintParamDesc().SetDefault(123));
+		rs2::UintParamDesc(rs2::ParamDesc::STORAGE::PARAM).SetDefault(123));
 	structDesc->AddParam(
 		L"FloatParam",
 		offsetof(SimpleStruct, FloatParam),
-		rs2::FloatParamDesc().SetDefault(3.14f));
+		rs2::FloatParamDesc(rs2::ParamDesc::STORAGE::PARAM).SetDefault(3.14f));
 	structDesc->AddParam(
 		L"StringParam",
 		offsetof(SimpleStruct, StringParam),
-		rs2::StringParamDesc().SetDefault(L"StringDefault"));
+		rs2::StringParamDesc(rs2::ParamDesc::STORAGE::PARAM).SetDefault(L"StringDefault"));
 	structDesc->AddParam(
 		L"GameTimeParam",
 		offsetof(SimpleStruct, GameTimeParam),
-		rs2::GameTimeParamDesc().SetDefault(common::MillisecondsToGameTime(1023)));
+		rs2::GameTimeParamDesc(rs2::ParamDesc::STORAGE::PARAM).SetDefault(common::MillisecondsToGameTime(1023)));
 
 	return structDesc;
 }
@@ -202,19 +206,19 @@ public:
 void DerivedStruct::CheckDefaultValues() const
 {
 	SimpleStruct::CheckDefaultValues();
-	EXPECT_EQ(555, DerivedUintParam.Value);
+	EXPECT_EQ(555, DerivedUintParam.GetConst());
 }
 
 void DerivedStruct::SetCustomValues()
 {
 	SimpleStruct::SetCustomValues();
-	DerivedUintParam.Value = 0xFFFFC0AD;
+	DerivedUintParam = 0xFFFFC0AD;
 }
 
 void DerivedStruct::CheckCustomValues() const
 {
 	SimpleStruct::CheckCustomValues();
-	EXPECT_EQ(0xFFFFC0AD, DerivedUintParam.Value);
+	EXPECT_EQ(0xFFFFC0AD, DerivedUintParam.GetConst());
 }
 
 unique_ptr<rs2::StructDesc> DerivedStruct::CreateStructDesc(const rs2::StructDesc* baseStructDesc)
@@ -225,7 +229,7 @@ unique_ptr<rs2::StructDesc> DerivedStruct::CreateStructDesc(const rs2::StructDes
 	StructDesc->AddParam(
 		L"DerivedUintParam",
 		offsetof(DerivedStruct, DerivedUintParam),
-		rs2::UintParamDesc().SetDefault(555));
+		rs2::UintParamDesc(rs2::ParamDesc::STORAGE::PARAM).SetDefault(555));
 
 	return StructDesc;
 }
@@ -233,8 +237,8 @@ unique_ptr<rs2::StructDesc> DerivedStruct::CreateStructDesc(const rs2::StructDes
 class ContainerStruct
 {
 public:
-	rs2::StructParam<SimpleStruct> StructParam;
-	rs2::FixedSizeArrayParam<rs2::UintParam, 3> FixedSizeArrayParam;
+	SimpleStruct StructParam;
+	rs2::UintParam FixedSizeArrayParam[3];
 
 	void CheckDefaultValues() const;
 	void SetCustomValues();
@@ -245,26 +249,26 @@ public:
 
 void ContainerStruct::CheckDefaultValues() const
 {
-	StructParam.Value.CheckDefaultValues();
-	EXPECT_EQ(124, FixedSizeArrayParam.Values[0].Value);
-	EXPECT_EQ(124, FixedSizeArrayParam.Values[1].Value);
-	EXPECT_EQ(124, FixedSizeArrayParam.Values[2].Value);
+	StructParam.CheckDefaultValues();
+	EXPECT_EQ(124, FixedSizeArrayParam[0].GetConst());
+	EXPECT_EQ(124, FixedSizeArrayParam[1].GetConst());
+	EXPECT_EQ(124, FixedSizeArrayParam[2].GetConst());
 }
 
 void ContainerStruct::SetCustomValues()
 {
-	StructParam.Value.SetCustomValues();
-	FixedSizeArrayParam.Values[0].Value = 0xDEAD;
-	FixedSizeArrayParam.Values[1].Value = 0xDEAE;
-	FixedSizeArrayParam.Values[2].Value = 0xDEAF;
+	StructParam.SetCustomValues();
+	FixedSizeArrayParam[0] = 0xDEAD;
+	FixedSizeArrayParam[1] = 0xDEAE;
+	FixedSizeArrayParam[2] = 0xDEAF;
 }
 
 void ContainerStruct::CheckCustomValues() const
 {
-	StructParam.Value.CheckCustomValues();
-	EXPECT_EQ(0xDEAD, FixedSizeArrayParam.Values[0].Value);
-	EXPECT_EQ(0xDEAE, FixedSizeArrayParam.Values[1].Value);
-	EXPECT_EQ(0xDEAF, FixedSizeArrayParam.Values[2].Value);
+	StructParam.CheckCustomValues();
+	EXPECT_EQ(0xDEAD, FixedSizeArrayParam[0].GetConst());
+	EXPECT_EQ(0xDEAE, FixedSizeArrayParam[1].GetConst());
+	EXPECT_EQ(0xDEAF, FixedSizeArrayParam[2].GetConst());
 }
 
 unique_ptr<rs2::StructDesc> ContainerStruct::CreateStructDesc(const rs2::StructDesc* simpleStructDesc)
@@ -279,7 +283,7 @@ unique_ptr<rs2::StructDesc> ContainerStruct::CreateStructDesc(const rs2::StructD
 	StructDesc->AddParam(
 		L"FixedSizeArrayParam",
 		offsetof(ContainerStruct, FixedSizeArrayParam),
-		rs2::FixedSizeArrayParamDesc(new rs2::UintParamDesc(rs2::UintParamDesc().SetDefault(124)), 3));
+		rs2::FixedSizeArrayParamDesc(new rs2::UintParamDesc(rs2::UintParamDesc(rs2::ParamDesc::STORAGE::PARAM).SetDefault(124)), 3));
 
 	return StructDesc;
 }
@@ -373,11 +377,13 @@ TEST_F(Fixture1, SimpleTokDocLoad)
 		rs2::STokDocLoadConfig(rs2::TOKDOC_FLAG_REQUIRED));
 	EXPECT_TRUE(ok);
 
-	EXPECT_EQ(false, obj.BoolParam.Value);
-	EXPECT_EQ(10056, obj.UintParam.Value);
-	EXPECT_FLOAT_EQ(23.67f, obj.FloatParam.Value);
-	EXPECT_EQ(L"StringValue", obj.StringParam.Value);
-	EXPECT_EQ(common::SecondsToGameTime(10.5f), obj.GameTimeParam.Value);
+	EXPECT_EQ(false, obj.BoolParam.GetConst());
+	EXPECT_EQ(10056, obj.UintParam.GetConst());
+	EXPECT_FLOAT_EQ(23.67f, obj.FloatParam.GetConst());
+	wstring str;
+	obj.StringParam.GetConst(str);
+	EXPECT_EQ(L"StringValue", str);
+	EXPECT_EQ(common::SecondsToGameTime(10.5f), obj.GameTimeParam.GetConst());
 }
 
 TEST_F(Fixture1, SimpleTokDocLoadAlternative)
@@ -404,11 +410,13 @@ TEST_F(Fixture1, SimpleTokDocLoadAlternative)
 		rs2::STokDocLoadConfig(rs2::TOKDOC_FLAG_REQUIRED));
 	EXPECT_TRUE(ok);
 
-	EXPECT_EQ(false, obj.BoolParam.Value);
-	EXPECT_EQ(0x2748, obj.UintParam.Value);
-	EXPECT_FLOAT_EQ(1.23e5f, obj.FloatParam.Value);
-	EXPECT_EQ(L"\n\n\"\\", obj.StringParam.Value);
-	EXPECT_EQ(common::SecondsToGameTime(-1e-3f), obj.GameTimeParam.Value);
+	EXPECT_EQ(false, obj.BoolParam.GetConst());
+	EXPECT_EQ(0x2748, obj.UintParam.GetConst());
+	EXPECT_FLOAT_EQ(1.23e5f, obj.FloatParam.GetConst());
+	wstring str;
+	obj.StringParam.GetConst(str);
+	EXPECT_EQ(L"\n\n\"\\", str);
+	EXPECT_EQ(common::SecondsToGameTime(-1e-3f), obj.GameTimeParam.GetConst());
 }
 
 TEST_F(Fixture1, SimpleTokDocLoadNegativeNotFound)
@@ -542,13 +550,13 @@ TEST_F(Fixture1, ContainerTokDocLoad)
 		rs2::STokDocLoadConfig(rs2::TOKDOC_FLAG_REQUIRED));
 	EXPECT_TRUE(ok);
 
-	EXPECT_EQ(false, obj.StructParam.Value.BoolParam.Value);
-	EXPECT_EQ(10056, obj.StructParam.Value.UintParam.Value);
-	EXPECT_FLOAT_EQ(23.67f, obj.StructParam.Value.FloatParam.Value);
-	EXPECT_EQ(common::SecondsToGameTime(10.5f), obj.StructParam.Value.GameTimeParam.Value);
-	EXPECT_EQ(9, obj.FixedSizeArrayParam.Values[0].Value);
-	EXPECT_EQ(8, obj.FixedSizeArrayParam.Values[1].Value);
-	EXPECT_EQ(7, obj.FixedSizeArrayParam.Values[2].Value);
+	EXPECT_EQ(false, obj.StructParam.BoolParam.GetConst());
+	EXPECT_EQ(10056, obj.StructParam.UintParam.GetConst());
+	EXPECT_FLOAT_EQ(23.67f, obj.StructParam.FloatParam.GetConst());
+	EXPECT_EQ(common::SecondsToGameTime(10.5f), obj.StructParam.GameTimeParam.GetConst());
+	EXPECT_EQ(9, obj.FixedSizeArrayParam[0].GetConst());
+	EXPECT_EQ(8, obj.FixedSizeArrayParam[1].GetConst());
+	EXPECT_EQ(7, obj.FixedSizeArrayParam[2].GetConst());
 }
 
 TEST_F(Fixture1, ContainerTokDocLoadOptionalCorrectDefault)
@@ -570,14 +578,16 @@ TEST_F(Fixture1, ContainerTokDocLoadOptionalCorrectDefault)
 		rs2::STokDocLoadConfig(rs2::TOKDOC_FLAG_OPTIONAL_CORRECT | rs2::TOKDOC_FLAG_DEFAULT));
 	EXPECT_FALSE(ok);
 
-	EXPECT_EQ(true, obj.StructParam.Value.BoolParam.Value);
-	EXPECT_EQ(123, obj.StructParam.Value.UintParam.Value);
-	EXPECT_EQ(3.14f, obj.StructParam.Value.FloatParam.Value);
-	EXPECT_EQ(L"StringDefault", obj.StructParam.Value.StringParam.Value);
-	EXPECT_EQ(common::MillisecondsToGameTime(1023), obj.StructParam.Value.GameTimeParam.Value);
-	EXPECT_EQ(124, obj.FixedSizeArrayParam.Values[0].Value);
-	EXPECT_EQ(124, obj.FixedSizeArrayParam.Values[1].Value);
-	EXPECT_EQ(124, obj.FixedSizeArrayParam.Values[2].Value);
+	EXPECT_EQ(true, obj.StructParam.BoolParam.GetConst());
+	EXPECT_EQ(123, obj.StructParam.UintParam.GetConst());
+	EXPECT_EQ(3.14f, obj.StructParam.FloatParam.GetConst());
+	wstring str;
+	obj.StructParam.StringParam.GetConst(str);
+	EXPECT_EQ(L"StringDefault", str);
+	EXPECT_EQ(common::MillisecondsToGameTime(1023), obj.StructParam.GameTimeParam.GetConst());
+	EXPECT_EQ(124, obj.FixedSizeArrayParam[0].GetConst());
+	EXPECT_EQ(124, obj.FixedSizeArrayParam[1].GetConst());
+	EXPECT_EQ(124, obj.FixedSizeArrayParam[2].GetConst());
 }
 
 TEST_F(Fixture1, ContainerTokDocLoadOptionalIncorrectDefault)
@@ -606,13 +616,13 @@ TEST_F(Fixture1, ContainerTokDocLoadOptionalIncorrectDefault)
 		rs2::STokDocLoadConfig(rs2::TOKDOC_FLAG_OPTIONAL | rs2::TOKDOC_FLAG_DEFAULT));
 	EXPECT_FALSE(ok);
 
-	EXPECT_EQ(true, obj.StructParam.Value.BoolParam.Value);
-	EXPECT_EQ(123, obj.StructParam.Value.UintParam.Value);
-	EXPECT_EQ(3.14f, obj.StructParam.Value.FloatParam.Value);
-	EXPECT_EQ(common::MillisecondsToGameTime(1023), obj.StructParam.Value.GameTimeParam.Value);
-	EXPECT_EQ(124, obj.FixedSizeArrayParam.Values[0].Value);
-	EXPECT_EQ(124, obj.FixedSizeArrayParam.Values[1].Value);
-	EXPECT_EQ(124, obj.FixedSizeArrayParam.Values[2].Value);
+	EXPECT_EQ(true, obj.StructParam.BoolParam.GetConst());
+	EXPECT_EQ(123, obj.StructParam.UintParam.GetConst());
+	EXPECT_EQ(3.14f, obj.StructParam.FloatParam.GetConst());
+	EXPECT_EQ(common::MillisecondsToGameTime(1023), obj.StructParam.GameTimeParam.GetConst());
+	EXPECT_EQ(124, obj.FixedSizeArrayParam[0].GetConst());
+	EXPECT_EQ(124, obj.FixedSizeArrayParam[1].GetConst());
+	EXPECT_EQ(124, obj.FixedSizeArrayParam[2].GetConst());
 }
 
 class MathStruct
@@ -631,23 +641,35 @@ public:
 
 void MathStruct::CheckDefaultValues() const
 {
-	EXPECT_EQ(VEC2(1.f, 2.f), Vec2Param.Value);
-	EXPECT_EQ(VEC3(1.f, 2.f, 3.f), Vec3Param.Value);
-	EXPECT_EQ(VEC4(1.f, 2.f, 3.f, 4.f), Vec4Param.Value);
+	VEC2 v2;
+	VEC3 v3;
+	VEC4 v4;
+	Vec2Param.GetConst(v2);
+	Vec3Param.GetConst(v3);
+	Vec4Param.GetConst(v4);
+	EXPECT_EQ(VEC2(1.f, 2.f), v2);
+	EXPECT_EQ(VEC3(1.f, 2.f, 3.f), v3);
+	EXPECT_EQ(VEC4(1.f, 2.f, 3.f, 4.f), v4);
 }
 
 void MathStruct::SetCustomValues()
 {
-	Vec2Param.Value = VEC2(11.f, 22.f);
-	Vec3Param.Value = VEC3(11.f, 22.f, 33.f);
-	Vec4Param.Value = VEC4(11.f, 22.f, 33.f, 44.f);
+	Vec2Param = VEC2(11.f, 22.f);
+	Vec3Param = VEC3(11.f, 22.f, 33.f);
+	Vec4Param = VEC4(11.f, 22.f, 33.f, 44.f);
 }
 
 void MathStruct::CheckCustomValues() const
 {
-	EXPECT_EQ(VEC2(11.f, 22.f), Vec2Param.Value);
-	EXPECT_EQ(VEC3(11.f, 22.f, 33.f), Vec3Param.Value);
-	EXPECT_EQ(VEC4(11.f, 22.f, 33.f, 44.f), Vec4Param.Value);
+	VEC2 v2;
+	VEC3 v3;
+	VEC4 v4;
+	Vec2Param.GetConst(v2);
+	Vec3Param.GetConst(v3);
+	Vec4Param.GetConst(v4);
+	EXPECT_EQ(VEC2(11.f, 22.f), v2);
+	EXPECT_EQ(VEC3(11.f, 22.f, 33.f), v3);
+	EXPECT_EQ(VEC4(11.f, 22.f, 33.f, 44.f), v4);
 }
 
 unique_ptr<rs2::StructDesc> MathStruct::CreateStructDesc()
@@ -658,15 +680,15 @@ unique_ptr<rs2::StructDesc> MathStruct::CreateStructDesc()
 	structDesc->AddParam(
 		L"Vec2Param",
 		offsetof(MathStruct, Vec2Param),
-		rs2::Vec2ParamDesc().SetDefault(VEC2(1.f, 2.f)));
+		rs2::Vec2ParamDesc(rs2::ParamDesc::STORAGE::PARAM).SetDefault(VEC2(1.f, 2.f)));
 	structDesc->AddParam(
 		L"Vec3Param",
 		offsetof(MathStruct, Vec3Param),
-		rs2::Vec3ParamDesc().SetDefault(VEC3(1.f, 2.f, 3.f)));
+		rs2::Vec3ParamDesc(rs2::ParamDesc::STORAGE::PARAM).SetDefault(VEC3(1.f, 2.f, 3.f)));
 	structDesc->AddParam(
 		L"Vec4Param",
 		offsetof(MathStruct, Vec4Param),
-		rs2::Vec4ParamDesc().SetDefault(VEC4(1.f, 2.f, 3.f, 4.f)));
+		rs2::Vec4ParamDesc(rs2::ParamDesc::STORAGE::PARAM).SetDefault(VEC4(1.f, 2.f, 3.f, 4.f)));
 
 	return structDesc;
 }
@@ -711,9 +733,15 @@ TEST(Math, TokDocLoad)
 		rs2::STokDocLoadConfig(rs2::TOKDOC_FLAG_REQUIRED));
 	EXPECT_TRUE(ok);
 
-	EXPECT_EQ(VEC2(11.f, 12.f), obj.Vec2Param.Value);
-	EXPECT_EQ(VEC3(11.f, 12.f, 13.f), obj.Vec3Param.Value);
-	EXPECT_EQ(VEC4(11.f, 12.f, 13.f, 14.f), obj.Vec4Param.Value);
+	VEC2 v2;
+	VEC3 v3;
+	VEC4 v4;
+	obj.Vec2Param.GetConst(v2);
+	obj.Vec3Param.GetConst(v3);
+	obj.Vec4Param.GetConst(v4);
+	EXPECT_EQ(VEC2(11.f, 12.f), v2);
+	EXPECT_EQ(VEC3(11.f, 12.f, 13.f), v3);
+	EXPECT_EQ(VEC4(11.f, 12.f, 13.f, 14.f), v4);
 }
 
 TEST(Math, TokDocLoadAlternative)
@@ -739,9 +767,15 @@ TEST(Math, TokDocLoadAlternative)
 		rs2::STokDocLoadConfig(rs2::TOKDOC_FLAG_REQUIRED));
 	EXPECT_TRUE(ok);
 
-	EXPECT_EQ(VEC2(11.f, 12.f), obj.Vec2Param.Value);
-	EXPECT_EQ(VEC3(11.f, 12.f, 13.f), obj.Vec3Param.Value);
-	EXPECT_EQ(VEC4(11.f, 12.f, 13.f, 14.f), obj.Vec4Param.Value);
+	VEC2 v2;
+	VEC3 v3;
+	VEC4 v4;
+	obj.Vec2Param.GetConst(v2);
+	obj.Vec3Param.GetConst(v3);
+	obj.Vec4Param.GetConst(v4);
+	EXPECT_EQ(VEC2(11.f, 12.f), v2);
+	EXPECT_EQ(VEC3(11.f, 12.f, 13.f), v3);
+	EXPECT_EQ(VEC4(11.f, 12.f, 13.f, 14.f), v4);
 }
 
 TEST(Math, TokDocLoadRequiredButNotFound)
@@ -1006,12 +1040,12 @@ struct PolymorphicBaseStruct
 
 void PolymorphicBaseStruct::SetCustomValues()
 {
-	BaseUintParam.Value = 666;
+	BaseUintParam = 666;
 }
 
 void PolymorphicBaseStruct::CheckCustomValues() const
 {
-	EXPECT_EQ(666, BaseUintParam.Value);
+	EXPECT_EQ(666, BaseUintParam.GetConst());
 }
 
 unique_ptr<rs2::StructDesc> PolymorphicBaseStruct::CreateStructDesc()
@@ -1021,7 +1055,7 @@ unique_ptr<rs2::StructDesc> PolymorphicBaseStruct::CreateStructDesc()
 	structDesc->AddParam(
 		L"BaseUintParam",
 		offsetof(PolymorphicBaseStruct, BaseUintParam),
-		rs2::UintParamDesc().SetDefault(555));
+		rs2::UintParamDesc(rs2::ParamDesc::STORAGE::PARAM).SetDefault(555));
 	return structDesc;
 }
 
@@ -1038,13 +1072,13 @@ struct PolymorphicDerivedStruct : public PolymorphicBaseStruct
 void PolymorphicDerivedStruct::SetCustomValues()
 {
 	PolymorphicBaseStruct::SetCustomValues();
-	DerivedUintParam.Value = 444;
+	DerivedUintParam = 444;
 }
 
 void PolymorphicDerivedStruct::CheckCustomValues() const
 {
 	PolymorphicBaseStruct::CheckCustomValues();
-	EXPECT_EQ(444, DerivedUintParam.Value);
+	EXPECT_EQ(444, DerivedUintParam.GetConst());
 }
 
 unique_ptr<rs2::StructDesc> PolymorphicDerivedStruct::CreateStructDesc(const rs2::StructDesc* baseStructDesc)
@@ -1054,7 +1088,7 @@ unique_ptr<rs2::StructDesc> PolymorphicDerivedStruct::CreateStructDesc(const rs2
 	structDesc->AddParam(
 		L"DerivedUintParam",
 		offsetof(PolymorphicDerivedStruct, DerivedUintParam),
-		rs2::UintParamDesc().SetDefault(333));
+		rs2::UintParamDesc(rs2::ParamDesc::STORAGE::PARAM).SetDefault(333));
 	return structDesc;
 }
 
@@ -1078,25 +1112,25 @@ TEST(StringConversion, Bool)
 	SimpleStruct s;
 	wstring valueStr;
 	
-	s.BoolParam.Value = false;
+	s.BoolParam = false;
 	EXPECT_TRUE( paramDesc->ToString(valueStr, &s.BoolParam) );
 	EXPECT_EQ(L"false", valueStr);
 	
-	s.BoolParam.Value = true;
+	s.BoolParam = true;
 	EXPECT_TRUE( paramDesc->ToString(valueStr, &s.BoolParam) );
 	EXPECT_EQ(L"true", valueStr);
 
 	EXPECT_TRUE( paramDesc->Parse(&s.BoolParam, L"false") );
-	EXPECT_EQ(false, s.BoolParam.Value);
+	EXPECT_EQ(false, s.BoolParam.GetConst());
 
 	EXPECT_TRUE( paramDesc->Parse(&s.BoolParam, L"true") );
-	EXPECT_EQ(true, s.BoolParam.Value);
+	EXPECT_EQ(true, s.BoolParam.GetConst());
 
 	EXPECT_TRUE( paramDesc->Parse(&s.BoolParam, L"0") );
-	EXPECT_EQ(false, s.BoolParam.Value);
+	EXPECT_EQ(false, s.BoolParam.GetConst());
 
 	EXPECT_TRUE( paramDesc->Parse(&s.BoolParam, L"1") );
-	EXPECT_EQ(true, s.BoolParam.Value);
+	EXPECT_EQ(true, s.BoolParam.GetConst());
 }
 
 TEST(StringConversion, Uint)
@@ -1110,15 +1144,15 @@ TEST(StringConversion, Uint)
 	SimpleStruct s;
 	wstring valueStr;
 
-	s.UintParam.Value = 123;
+	s.UintParam = 123;
 	EXPECT_TRUE( paramDesc->ToString(valueStr, &s.UintParam) );
 	EXPECT_EQ(L"123", valueStr);
 
 	EXPECT_TRUE( paramDesc->Parse(&s.UintParam, L"65536") );
-	EXPECT_EQ(65536, s.UintParam.Value);
+	EXPECT_EQ(65536, s.UintParam.GetConst());
 
 	EXPECT_TRUE( paramDesc->Parse(&s.UintParam, L"0xDEADC0DE") );
-	EXPECT_EQ(0xDEADC0DE, s.UintParam.Value);
+	EXPECT_EQ(0xDEADC0DE, s.UintParam.GetConst());
 }
 
 TEST(StringConversion, Float)
@@ -1132,19 +1166,19 @@ TEST(StringConversion, Float)
 	SimpleStruct s;
 	wstring valueStr;
 
-	s.FloatParam.Value = 123.f;
+	s.FloatParam = 123.f;
 	EXPECT_TRUE( paramDesc->ToString(valueStr, &s.FloatParam) );
 	EXPECT_EQ(L"123", valueStr);
 
-	s.FloatParam.Value = -6.25f;
+	s.FloatParam = -6.25f;
 	EXPECT_TRUE( paramDesc->ToString(valueStr, &s.FloatParam) );
 	EXPECT_EQ(L"-6.25", valueStr);
 
 	EXPECT_TRUE( paramDesc->Parse(&s.FloatParam, L"13.5") );
-	EXPECT_FLOAT_EQ(13.5f, s.FloatParam.Value);
+	EXPECT_FLOAT_EQ(13.5f, s.FloatParam.GetConst());
 
 	EXPECT_TRUE( paramDesc->Parse(&s.FloatParam, L"-1.2345e-3") );
-	EXPECT_FLOAT_EQ(-1.2345e-3f, s.FloatParam.Value);
+	EXPECT_FLOAT_EQ(-1.2345e-3f, s.FloatParam.GetConst());
 }
 
 TEST(StringConversion, String)
@@ -1158,12 +1192,13 @@ TEST(StringConversion, String)
 	SimpleStruct s;
 	wstring valueStr;
 
-	s.StringParam.Value = L"aaa";
+	s.StringParam = L"aaa";
 	EXPECT_TRUE( paramDesc->ToString(valueStr, &s.StringParam) );
 	EXPECT_EQ(L"aaa", valueStr);
 
 	EXPECT_TRUE( paramDesc->Parse(&s.StringParam, L"\r\n\t<>&%") );
-	EXPECT_EQ(L"\r\n\t<>&%", s.StringParam.Value);
+	s.StringParam.GetConst(valueStr);
+	EXPECT_EQ(L"\r\n\t<>&%", valueStr);
 }
 
 TEST(StringConversion, GameTime)
@@ -1177,12 +1212,12 @@ TEST(StringConversion, GameTime)
 	SimpleStruct s;
 	wstring valueStr;
 
-	s.GameTimeParam.Value = common::SecondsToGameTime(12.5);
+	s.GameTimeParam = common::SecondsToGameTime(12.5);
 	EXPECT_TRUE( paramDesc->ToString(valueStr, &s.GameTimeParam) );
 	EXPECT_EQ(L"12.5s", valueStr);
 
 	EXPECT_TRUE( paramDesc->Parse(&s.GameTimeParam, L"10:25") );
-	EXPECT_DOUBLE_EQ(10. * 60. + 25., s.GameTimeParam.Value.ToSeconds_d());
+	EXPECT_DOUBLE_EQ(10. * 60. + 25., s.GameTimeParam.GetConst().ToSeconds_d());
 }
 
 TEST(StringConversion, Vec2)
@@ -1196,13 +1231,15 @@ TEST(StringConversion, Vec2)
 	MathStruct s;
 	wstring valueStr;
 
-	s.Vec2Param.Value = VEC2(1.f, 2.f);
+	s.Vec2Param = VEC2(1.f, 2.f);
 	EXPECT_TRUE( paramDesc->ToString(valueStr, &s.Vec2Param) );
 	EXPECT_EQ(L"1,2", valueStr);
 
 	EXPECT_TRUE( paramDesc->Parse(&s.Vec2Param, L"-1.25,10") );
-	EXPECT_FLOAT_EQ(-1.25f, s.Vec2Param.Value.x);
-	EXPECT_FLOAT_EQ(10.f, s.Vec2Param.Value.y);
+	VEC2 v2;
+	s.Vec2Param.GetConst(v2);
+	EXPECT_FLOAT_EQ(-1.25f, v2.x);
+	EXPECT_FLOAT_EQ(10.f, v2.y);
 }
 
 TEST(StringConversion, Vec3)
@@ -1216,14 +1253,16 @@ TEST(StringConversion, Vec3)
 	MathStruct s;
 	wstring valueStr;
 
-	s.Vec3Param.Value = VEC3(1.f, 2.f, 3.f);
+	s.Vec3Param = VEC3(1.f, 2.f, 3.f);
 	EXPECT_TRUE( paramDesc->ToString(valueStr, &s.Vec3Param) );
 	EXPECT_EQ(L"1,2,3", valueStr);
 
 	EXPECT_TRUE( paramDesc->Parse(&s.Vec3Param, L"-1.25,10,0") );
-	EXPECT_FLOAT_EQ(-1.25f, s.Vec3Param.Value.x);
-	EXPECT_FLOAT_EQ(10.f, s.Vec3Param.Value.y);
-	EXPECT_FLOAT_EQ(0.f, s.Vec3Param.Value.z);
+	VEC3 v3;
+	s.Vec3Param.GetConst(v3);
+	EXPECT_FLOAT_EQ(-1.25f, v3.x);
+	EXPECT_FLOAT_EQ(10.f, v3.y);
+	EXPECT_FLOAT_EQ(0.f, v3.z);
 }
 
 TEST(StringConversion, Vec4)
@@ -1237,22 +1276,24 @@ TEST(StringConversion, Vec4)
 	MathStruct s;
 	wstring valueStr;
 
-	s.Vec4Param.Value = VEC4(1.f, 2.f, 3.f, -10.f);
+	s.Vec4Param = VEC4(1.f, 2.f, 3.f, -10.f);
 	EXPECT_TRUE( paramDesc->ToString(valueStr, &s.Vec4Param) );
 	EXPECT_EQ(L"1,2,3,-10", valueStr);
 
 	EXPECT_TRUE( paramDesc->Parse(&s.Vec4Param, L"-1.25,10,0,1e-6") );
-	EXPECT_FLOAT_EQ(-1.25f, s.Vec4Param.Value.x);
-	EXPECT_FLOAT_EQ(10.f, s.Vec4Param.Value.y);
-	EXPECT_FLOAT_EQ(0.f, s.Vec4Param.Value.z);
-	EXPECT_FLOAT_EQ(1e-6f, s.Vec4Param.Value.w);
+	VEC4 v4;
+	s.Vec4Param.GetConst(v4);
+	EXPECT_FLOAT_EQ(-1.25f, v4.x);
+	EXPECT_FLOAT_EQ(10.f, v4.y);
+	EXPECT_FLOAT_EQ(0.f, v4.z);
+	EXPECT_FLOAT_EQ(1e-6f, v4.w);
 }
 
 TEST(FindObjParamByPath, Simple)
 {
 	unique_ptr<rs2::StructDesc> structDesc = SimpleStruct::CreateStructDesc();
 	SimpleStruct s;
-	s.UintParam.Value = 123;
+	s.UintParam = 123;
 
 	void* param = nullptr;
 	const rs2::ParamDesc* paramDesc = nullptr;
@@ -1264,7 +1305,7 @@ TEST(FindObjParamByPath, Simple)
 	ASSERT_TRUE(paramDesc != nullptr);
 	ASSERT_TRUE(typeid(rs2::UintParamDesc) == typeid(*paramDesc));
 	rs2::UintParam* uintParam = (rs2::UintParam*)param;
-	EXPECT_EQ(123, uintParam->Value);
+	EXPECT_EQ(123, uintParam->GetConst());
 }
 
 TEST(FindObjParamByPath, SubStruct)
@@ -1272,7 +1313,7 @@ TEST(FindObjParamByPath, SubStruct)
 	unique_ptr<rs2::StructDesc> simpleStructDesc = SimpleStruct::CreateStructDesc();
 	unique_ptr<rs2::StructDesc> containerStructDesc = ContainerStruct::CreateStructDesc(simpleStructDesc.get());
 	ContainerStruct s;
-	s.StructParam.Value.UintParam.Value = 123;
+	s.StructParam.UintParam = 123;
 
 	void* param = nullptr;
 	const rs2::ParamDesc* paramDesc = nullptr;
@@ -1284,7 +1325,7 @@ TEST(FindObjParamByPath, SubStruct)
 	ASSERT_TRUE(paramDesc != nullptr);
 	ASSERT_TRUE(typeid(rs2::UintParamDesc) == typeid(*paramDesc));
 	rs2::UintParam* uintParam = (rs2::UintParam*)param;
-	EXPECT_EQ(123, uintParam->Value);
+	EXPECT_EQ(123, uintParam->GetConst());
 }
 
 TEST(FindObjParamByPath, FixedSizeArray)
@@ -1292,7 +1333,7 @@ TEST(FindObjParamByPath, FixedSizeArray)
 	unique_ptr<rs2::StructDesc> simpleStructDesc = SimpleStruct::CreateStructDesc();
 	unique_ptr<rs2::StructDesc> containerStructDesc = ContainerStruct::CreateStructDesc(simpleStructDesc.get());
 	ContainerStruct s;
-	s.FixedSizeArrayParam.Values[2].Value = 123;
+	s.FixedSizeArrayParam[2] = 123;
 
 	void* param = nullptr;
 	const rs2::ParamDesc* paramDesc = nullptr;
@@ -1304,7 +1345,7 @@ TEST(FindObjParamByPath, FixedSizeArray)
 	ASSERT_TRUE(paramDesc != nullptr);
 	ASSERT_TRUE(typeid(rs2::UintParamDesc) == typeid(*paramDesc));
 	rs2::UintParam* uintParam = (rs2::UintParam*)param;
-	EXPECT_EQ(123, uintParam->Value);
+	EXPECT_EQ(123, uintParam->GetConst());
 }
 
 TEST(FindObjParamByPath, Negative)

@@ -17,135 +17,199 @@
 namespace RegScript2
 {
 
+// For internal use only.
+extern const wchar_t* const ERR_MSG_VALUE_NOT_CONST;
+
 class StructDesc;
 
-class BoolParam
+// Class is NOT polymorphic.
+class Param
 {
+private:
+#ifdef _DEBUG
+	static const uint32_t MAGIC_NUMBER_VALUE = 0x42346813;
+	uint32_t m_MagicNumber;
+#endif
+
 public:
-	bool Value;
-
-	BoolParam() { }
-	BoolParam(bool initialValue) : Value(initialValue) { }
-};
-
-class UintParam
-{
-public:
-	uint32_t Value;
-
-	UintParam() { }
-	UintParam(uint32_t initialValue) : Value(initialValue) { }
-};
-
-class FloatParam
-{
-public:
-	float Value;
-
-	FloatParam() { }
-	FloatParam(float initialValue) : Value(initialValue) { }
-};
-
-class StringParam
-{
-public:
-	std::wstring Value;
-
-	StringParam() { }
-	StringParam(const wchar_t* initialValue) : Value(initialValue) { }
-	StringParam(const std::wstring& initialValue) : Value(initialValue) { }
-};
-
-class GameTimeParam
-{
-public:
-	common::GameTime Value;
-
-	GameTimeParam() { }
-	GameTimeParam(const common::GameTime& initialValue) : Value(initialValue) { }
-};
-
-class Vec2Param
-{
-public:
-	common::VEC2 Value;
-
-	Vec2Param() { }
-	Vec2Param(const common::VEC2& initialValue) : Value(initialValue) { }
-};
-
-class Vec3Param
-{
-public:
-	common::VEC3 Value;
-
-	Vec3Param() { }
-	Vec3Param(const common::VEC3& initialValue) : Value(initialValue) { }
-};
-
-class Vec4Param
-{
-public:
-	common::VEC4 Value;
-
-	Vec4Param() { }
-	Vec4Param(const common::VEC4& initialValue) : Value(initialValue) { }
-};
-
-template<typename Struct_t>
-class StructParam
-{
-public:
-	typedef Struct_t Struct_t;
-
-	// This member must be first because we cast this object directly to value.
-	Struct_t Value;
-
-	StructParam() { }
-	StructParam(const Struct_t &initialValue) : Value(initialValue) { }
-};
-
-template<typename Element_t, size_t Count>
-class FixedSizeArrayParam
-{
-public:
-	typedef Element_t Element_t;
-	enum { Count = Count };
-
-	Element_t Values[Count];
-
-	FixedSizeArrayParam() { }
-	FixedSizeArrayParam(const Element_t* initialValues)
+	enum class VALUE_TYPE
 	{
-		for(size_t i = 0; i < Count; ++i)
-			Values[i] = initialValues[i];
+		CONSTANT,
+		WAVEFORM, // TODO Implement
+		CURVE, // TODO Implement
+		EXPRESSION, // TODO Implement
+	};
+
+	Param() :
+#ifdef _DEBUG
+		m_MagicNumber(MAGIC_NUMBER_VALUE),
+#endif
+		m_ValueType(VALUE_TYPE::CONSTANT)
+	{
 	}
+
+#ifdef _DEBUG
+	void CheckMagicNumber() const { assert(m_MagicNumber == MAGIC_NUMBER_VALUE); }
+#else
+	void CheckMagicNumber() const { }
+#endif
+
+	VALUE_TYPE GetValueType() { return m_ValueType; }
+
+protected:
+	VALUE_TYPE m_ValueType;
 };
+
+class BoolParam : public Param
+{
+public:
+	BoolParam() { }
+	BoolParam(bool initialValue) : m_Value(initialValue) { }
+
+	bool IsConst() const { return true; } // TODO
+	bool TryGetConst(bool& outValue) const { outValue = m_Value; return true; } // TODO
+	bool GetConst() const;
+	
+	void SetConst(bool value);
+	BoolParam& operator=(bool value) { SetConst(value); return *this; }
+
+private:
+	bool m_Value;
+};
+
+class UintParam : public Param
+{
+public:
+	UintParam() { }
+	UintParam(uint32_t initialValue) : m_Value(initialValue) { }
+
+	bool IsConst() const { return true; } // TODO
+	bool TryGetConst(uint32_t& outValue) const { outValue = m_Value; return true; } // TODO
+	uint32_t GetConst() const;
+
+	void SetConst(uint32_t value);
+	UintParam& operator=(uint32_t value) { SetConst(value); return *this; }
+
+private:
+	uint32_t m_Value;
+};
+
+class FloatParam : public Param
+{
+public:
+	FloatParam() { }
+	FloatParam(float initialValue) : m_Value(initialValue) { }
+
+	bool IsConst() const { return true; } // TODO
+	bool TryGetConst(float& outValue) const { outValue = m_Value; return true; } // TODO
+	float GetConst() const;
+
+	void SetConst(float value);
+	FloatParam& operator=(float value) { SetConst(value); return *this; }
+
+private:
+	float m_Value;
+};
+
+class StringParam : public Param
+{
+public:
+	StringParam() { }
+	StringParam(const wchar_t* initialValue) : m_Value(initialValue) { }
+	StringParam(const std::wstring& initialValue) : m_Value(initialValue) { }
+
+	bool IsConst() const { return true; } // TODO
+	bool TryGetConst(std::wstring& outValue) const { outValue = m_Value; return true; } // TODO
+	void GetConst(std::wstring& outValue) const;
+
+	void SetConst(const wchar_t* value);
+	StringParam& operator=(const std::wstring& value) { SetConst(value.c_str()); return *this; }
+	StringParam& operator=(const wchar_t* value) { SetConst(value); return *this; }
+
+private:
+	std::wstring m_Value;
+};
+
+class GameTimeParam : public Param
+{
+public:
+	GameTimeParam() { }
+	GameTimeParam(const common::GameTime& initialValue) : m_Value(initialValue) { }
+
+	bool IsConst() const { return true; } // TODO
+	bool TryGetConst(common::GameTime& outValue) const { outValue = m_Value; return true; } // TODO
+	common::GameTime GetConst() const;
+
+	void SetConst(common::GameTime value);
+	GameTimeParam& operator=(common::GameTime value) { SetConst(value); return *this; }
+
+private:
+	common::GameTime m_Value;
+};
+
+// Vec_t: Use common::VEC2, VEC3, VEC4.
+template<typename Vec_t>
+class VecParam : public Param
+{
+public:
+	VecParam() { }
+	VecParam(const Vec_t& initialValue) : m_Value(initialValue) { }
+
+	bool IsConst() const { return true; } // TODO
+	bool TryGetConst(Vec_t& outValue) const { outValue = m_Value; return true; } // TODO
+	void GetConst(Vec_t& outValue) const;
+
+	void SetConst(const Vec_t& value);
+	VecParam<Vec_t>& operator=(const Vec_t& value) { SetConst(value); return *this; }
+
+private:
+	Vec_t m_Value;
+};
+
+typedef VecParam<common::VEC2> Vec2Param;
+typedef VecParam<common::VEC3> Vec3Param;
+typedef VecParam<common::VEC4> Vec4Param;
 
 class ParamDesc
 {
 public:
+	enum class STORAGE
+	{
+		RAW, // Value of destination type, e.g. unsigned, float.
+		PARAM, // Value of appropriate parameter type, e.g. UintParam, FloatParam.
+	};
+
+	ParamDesc(STORAGE storage) : m_Storage(storage) { }
 	virtual ~ParamDesc() { }
 
+	STORAGE GetStorage() const { return m_Storage; }
+
 	virtual size_t GetParamSize() const = 0;
+	virtual bool IsConst(const void* param) const = 0;
 	virtual void SetToDefault(void* param) const = 0;
 	virtual void Copy(void* dstParam, const void* srcParam) const = 0;
 	// If not supported, returns false.
-	virtual bool ToString(wstring& out, const void* srcParam) const { out.clear(); return false; }
+	virtual bool ToString(std::wstring& out, const void* srcParam) const { out.clear(); return false; }
 	// If not supported or parse error, returns false and leaves value undefined.
 	virtual bool Parse(void* dstParam, const wchar_t* src) const { return false; }
+
+private:
+	STORAGE m_Storage;
 };
 
 class StructParamDesc : public ParamDesc
 {
 public:
-	StructParamDesc(const StructDesc* structDesc) : m_StructDesc(structDesc)
+	StructParamDesc(const StructDesc* structDesc) :
+		ParamDesc(STORAGE::RAW),
+		m_StructDesc(structDesc)
 	{
 		assert(structDesc != nullptr);
 	}
 	const StructDesc* GetStructDesc() const { return m_StructDesc; }
 
 	inline virtual size_t GetParamSize() const;
+	virtual bool IsConst(const void* param) const { return true; }
 	inline virtual void SetToDefault(void* param) const;
 	inline virtual void Copy(void* dstParam, const void* srcParam) const;
 
@@ -157,7 +221,9 @@ class FixedSizeArrayParamDesc : public ParamDesc
 {
 public:
 	// Takes ownership of elementParamDesc.
-	FixedSizeArrayParamDesc(const ParamDesc* elementParamDesc, size_t count) : m_ElementParamDesc(elementParamDesc), m_Count(count)
+	FixedSizeArrayParamDesc(const ParamDesc* elementParamDesc, size_t count) :
+		ParamDesc(STORAGE::RAW),
+		m_ElementParamDesc(elementParamDesc), m_Count(count)
 	{
 		assert(elementParamDesc != nullptr);
 	}
@@ -168,6 +234,7 @@ public:
 	const void* AccessElement(const void* param, size_t elementIndex) const;
 
 	inline virtual size_t GetParamSize() const;
+	virtual bool IsConst(const void* param) const { return true; }
 	virtual void SetToDefault(void* param) const;
 	virtual void Copy(void* dstParam, const void* srcParam) const;
 
@@ -185,7 +252,11 @@ class TypedParamDesc : public ParamDesc
 public:
 	Value_t DefaultValue;
 
-	TypedParamDesc() : DefaultValue() { }
+	TypedParamDesc(STORAGE storage) :
+		ParamDesc(storage),
+		DefaultValue()
+	{
+	}
 
 private:
 };
@@ -194,20 +265,30 @@ class BoolParamDesc : public TypedParamDesc<bool>
 {
 public:
 	typedef BoolParam Param_t;
+	typedef bool Value_t;
 
-	BoolParamDesc& SetDefault(bool defaultValue) { DefaultValue = defaultValue; return *this; }
-
-	virtual size_t GetParamSize() const { return sizeof(Param_t); }
-	virtual void SetToDefault(void* param) const
+	BoolParamDesc(STORAGE storage) :
+		TypedParamDesc<bool>(storage)
 	{
-		((Param_t*)param)->Value = DefaultValue;
-	}
-	virtual void Copy(void* dstParam, const void* srcParam) const
-	{
-		((Param_t*)dstParam)->Value = ((Param_t*)srcParam)->Value;
 	}
 
-	virtual bool ToString(wstring& out, const void* srcParam) const;
+	BoolParamDesc& SetDefault(Value_t defaultValue) { DefaultValue = defaultValue; return *this; }
+
+	virtual size_t GetParamSize() const;
+
+	Value_t* AccessAsRaw(void* param) const { return (Value_t*)param; }
+	const Value_t* AccessAsRaw(const void* param) const { return (const Value_t*)param; }
+	Param_t* AccessAsParam(void* param) const { Param_t* result = (Param_t*)param; result->CheckMagicNumber(); return result; }
+	const Param_t* AccessAsParam(const void* param) const { const Param_t* result = (const Param_t*)param; result->CheckMagicNumber(); return result; }
+
+	virtual bool IsConst(const void* param) const;
+	bool TryGetConst(Value_t& outValue, const void* param) const;
+	Value_t GetConst(const void* param) const;
+	void SetConst(void* param, Value_t value) const;
+
+	virtual void SetToDefault(void* param) const { SetConst(param, DefaultValue); }
+	virtual void Copy(void* dstParam, const void* srcParam) const;
+	virtual bool ToString(std::wstring& out, const void* srcParam) const;
 	virtual bool Parse(void* dstParam, const wchar_t* src) const;
 };
 
@@ -215,6 +296,7 @@ class UintParamDesc : public TypedParamDesc<uint32_t>
 {
 public:
 	typedef UintParam Param_t;
+	typedef uint32_t Value_t;
 
 	// It only affects the way of displaying value.
 	enum FORMAT
@@ -225,21 +307,30 @@ public:
 	};
 	FORMAT Format;
 
-	UintParamDesc() : Format(FORMAT_DEC) { }
-	UintParamDesc& SetDefault(uint32_t defaultValue) { DefaultValue = defaultValue; return *this; }
+	UintParamDesc(STORAGE storage) :
+		TypedParamDesc<uint32_t>(storage),
+		Format(FORMAT_DEC)
+	{
+	}
+
+	UintParamDesc& SetDefault(Value_t defaultValue) { DefaultValue = defaultValue; return *this; }
 	UintParamDesc& SetFormat(FORMAT format) { Format = format; return *this; }
 
-	virtual size_t GetParamSize() const { return sizeof(Param_t); }
-	virtual void SetToDefault(void* param) const
-	{
-		((Param_t*)param)->Value = DefaultValue;
-	}
-	virtual void Copy(void* dstParam, const void* srcParam) const
-	{
-		((Param_t*)dstParam)->Value = ((Param_t*)srcParam)->Value;
-	}
+	virtual size_t GetParamSize() const;
 
-	virtual bool ToString(wstring& out, const void* srcParam) const;
+	Value_t* AccessAsRaw(void* param) const { return (Value_t*)param; }
+	const Value_t* AccessAsRaw(const void* param) const { return (const Value_t*)param; }
+	Param_t* AccessAsParam(void* param) const { Param_t* result = (Param_t*)param; result->CheckMagicNumber(); return result; }
+	const Param_t* AccessAsParam(const void* param) const { const Param_t* result = (const Param_t*)param; result->CheckMagicNumber(); return result; }
+
+	virtual bool IsConst(const void* param) const;
+	bool TryGetConst(Value_t& outValue, const void* param) const;
+	Value_t GetConst(const void* param) const;
+	void SetConst(void* param, Value_t value) const;
+
+	virtual void SetToDefault(void* param) const { SetConst(param, DefaultValue); }
+	virtual void Copy(void* dstParam, const void* srcParam) const;
+	virtual bool ToString(std::wstring& out, const void* srcParam) const;
 	virtual bool Parse(void* dstParam, const wchar_t* src) const;
 };
 
@@ -247,6 +338,7 @@ class FloatParamDesc : public TypedParamDesc<float>
 {
 public:
 	typedef FloatParam Param_t;
+	typedef float Value_t;
 
 	// It only affects the way of displaying value.
 	enum FORMAT
@@ -258,21 +350,30 @@ public:
 	};
 	FORMAT Format;
 
-	FloatParamDesc() : Format(FORMAT_NORMAL) { }
-	FloatParamDesc& SetDefault(float defaultValue) { DefaultValue = defaultValue; return *this; }
+	FloatParamDesc(STORAGE storage) :
+		TypedParamDesc<float>(storage),
+		Format(FORMAT_NORMAL)
+	{
+	}
+
+	FloatParamDesc& SetDefault(Value_t defaultValue) { DefaultValue = defaultValue; return *this; }
 	FloatParamDesc& SetFormat(FORMAT format) { Format = format; return *this; }
 
-	virtual size_t GetParamSize() const { return sizeof(Param_t); }
-	virtual void SetToDefault(void* param) const
-	{
-		((Param_t*)param)->Value = DefaultValue;
-	}
-	virtual void Copy(void* dstParam, const void* srcParam) const
-	{
-		((Param_t*)dstParam)->Value = ((Param_t*)srcParam)->Value;
-	}
+	virtual size_t GetParamSize() const;
 
-	virtual bool ToString(wstring& out, const void* srcParam) const;
+	Value_t* AccessAsRaw(void* param) const { return (Value_t*)param; }
+	const Value_t* AccessAsRaw(const void* param) const { return (const Value_t*)param; }
+	Param_t* AccessAsParam(void* param) const { Param_t* result = (Param_t*)param; result->CheckMagicNumber(); return result; }
+	const Param_t* AccessAsParam(const void* param) const { const Param_t* result = (const Param_t*)param; result->CheckMagicNumber(); return result; }
+
+	virtual bool IsConst(const void* param) const;
+	bool TryGetConst(Value_t& outValue, const void* param) const;
+	Value_t GetConst(const void* param) const;
+	void SetConst(void* param, Value_t value) const;
+
+	virtual void SetToDefault(void* param) const { SetConst(param, DefaultValue); }
+	virtual void Copy(void* dstParam, const void* srcParam) const;
+	virtual bool ToString(std::wstring& out, const void* srcParam) const;
 	virtual bool Parse(void* dstParam, const wchar_t* src) const;
 };
 
@@ -280,20 +381,31 @@ class StringParamDesc : public TypedParamDesc<std::wstring>
 {
 public:
 	typedef StringParam Param_t;
+	typedef std::wstring Value_t;
+
+	StringParamDesc(STORAGE storage) :
+		TypedParamDesc<std::wstring>(storage)
+	{
+	}
 
 	StringParamDesc& SetDefault(const wchar_t* defaultValue) { DefaultValue = defaultValue; return *this; }
 
-	virtual size_t GetParamSize() const { return sizeof(Param_t); }
-	virtual void SetToDefault(void* param) const
-	{
-		((Param_t*)param)->Value = DefaultValue;
-	}
-	virtual void Copy(void* dstParam, const void* srcParam) const
-	{
-		((Param_t*)dstParam)->Value = ((Param_t*)srcParam)->Value;
-	}
+	virtual size_t GetParamSize() const;
 
-	virtual bool ToString(wstring& out, const void* srcParam) const;
+	Value_t* AccessAsRaw(void* param) const { return (Value_t*)param; }
+	const Value_t* AccessAsRaw(const void* param) const { return (const Value_t*)param; }
+	Param_t* AccessAsParam(void* param) const { Param_t* result = (Param_t*)param; result->CheckMagicNumber(); return result; }
+	const Param_t* AccessAsParam(const void* param) const { const Param_t* result = (const Param_t*)param; result->CheckMagicNumber(); return result; }
+
+	virtual bool IsConst(const void* param) const;
+	bool TryGetConst(Value_t& outValue, const void* param) const;
+	void GetConst(Value_t& outValue, const void* param) const;
+	void SetConst(void* param, const wchar_t* value) const;
+	void SetConst(void* param, const std::wstring& value) const { SetConst(param, value.c_str()); }
+
+	virtual void SetToDefault(void* param) const { SetConst(param, DefaultValue.c_str()); }
+	virtual void Copy(void* dstParam, const void* srcParam) const;
+	virtual bool ToString(std::wstring& out, const void* srcParam) const;
 	virtual bool Parse(void* dstParam, const wchar_t* src) const;
 };
 
@@ -301,85 +413,68 @@ class GameTimeParamDesc : public TypedParamDesc<common::GameTime>
 {
 public:
 	typedef GameTimeParam Param_t;
+	typedef common::GameTime Value_t;
 
-	GameTimeParamDesc& SetDefault(const common::GameTime& defaultValue) { DefaultValue = defaultValue; return *this; }
-
-	virtual size_t GetParamSize() const { return sizeof(Param_t); }
-	virtual void SetToDefault(void* param) const
+	GameTimeParamDesc(STORAGE storage) :
+		TypedParamDesc<common::GameTime>(storage)
 	{
-		((Param_t*)param)->Value = DefaultValue;
-	}
-	virtual void Copy(void* dstParam, const void* srcParam) const
-	{
-		((Param_t*)dstParam)->Value = ((Param_t*)srcParam)->Value;
 	}
 
-	virtual bool ToString(wstring& out, const void* srcParam) const;
+	GameTimeParamDesc& SetDefault(const Value_t& defaultValue) { DefaultValue = defaultValue; return *this; }
+
+	virtual size_t GetParamSize() const;
+
+	Value_t* AccessAsRaw(void* param) const { return (Value_t*)param; }
+	const Value_t* AccessAsRaw(const void* param) const { return (const Value_t*)param; }
+	Param_t* AccessAsParam(void* param) const { Param_t* result = (Param_t*)param; result->CheckMagicNumber(); return result; }
+	const Param_t* AccessAsParam(const void* param) const { const Param_t* result = (const Param_t*)param; result->CheckMagicNumber(); return result; }
+
+	virtual bool IsConst(const void* param) const;
+	bool TryGetConst(Value_t& outValue, const void* param) const;
+	Value_t GetConst(const void* param) const;
+	void SetConst(void* param, Value_t value) const;
+
+	virtual void SetToDefault(void* param) const { SetConst(param, DefaultValue); }
+	virtual void Copy(void* dstParam, const void* srcParam) const;
+	virtual bool ToString(std::wstring& out, const void* srcParam) const;
 	virtual bool Parse(void* dstParam, const wchar_t* src) const;
 };
 
-class Vec2ParamDesc : public TypedParamDesc<common::VEC2>
+template<typename Vec_t>
+class VecParamDesc : public TypedParamDesc<Vec_t>
 {
 public:
-	typedef Vec2Param Param_t;
+	typedef VecParam<Vec_t> Param_t;
+	typedef Vec_t Value_t;
 
-	Vec2ParamDesc& SetDefault(const common::VEC2& defaultValue) { DefaultValue = defaultValue; return *this; }
-
-	virtual size_t GetParamSize() const { return sizeof(Param_t); }
-	virtual void SetToDefault(void* param) const
+	VecParamDesc(STORAGE storage) :
+		TypedParamDesc<Vec_t>(storage)
 	{
-		((Param_t*)param)->Value = DefaultValue;
-	}
-	virtual void Copy(void* dstParam, const void* srcParam) const
-	{
-		((Param_t*)dstParam)->Value = ((Param_t*)srcParam)->Value;
 	}
 
-	virtual bool ToString(wstring& out, const void* srcParam) const;
+	VecParamDesc<Vec_t>& SetDefault(const Value_t& defaultValue) { DefaultValue = defaultValue; return *this; }
+
+	virtual size_t GetParamSize() const;
+
+	Value_t* AccessAsRaw(void* param) const { return (Value_t*)param; }
+	const Value_t* AccessAsRaw(const void* param) const { return (const Value_t*)param; }
+	Param_t* AccessAsParam(void* param) const { Param_t* result = (Param_t*)param; result->CheckMagicNumber(); return result; }
+	const Param_t* AccessAsParam(const void* param) const { const Param_t* result = (const Param_t*)param; result->CheckMagicNumber(); return result; }
+
+	virtual bool IsConst(const void* param) const;
+	bool TryGetConst(Value_t& outValue, const void* param) const;
+	void GetConst(Value_t& outValue, const void* param) const;
+	void SetConst(void* param, const Value_t& value) const;
+
+	virtual void SetToDefault(void* param) const { SetConst(param, DefaultValue); }
+	virtual void Copy(void* dstParam, const void* srcParam) const;
+	virtual bool ToString(std::wstring& out, const void* srcParam) const;
 	virtual bool Parse(void* dstParam, const wchar_t* src) const;
 };
 
-class Vec3ParamDesc : public TypedParamDesc<common::VEC3>
-{
-public:
-	typedef Vec3Param Param_t;
-
-	Vec3ParamDesc& SetDefault(const common::VEC3& defaultValue) { DefaultValue = defaultValue; return *this; }
-
-	virtual size_t GetParamSize() const { return sizeof(Param_t); }
-	virtual void SetToDefault(void* param) const
-	{
-		((Param_t*)param)->Value = DefaultValue;
-	}
-	virtual void Copy(void* dstParam, const void* srcParam) const
-	{
-		((Param_t*)dstParam)->Value = ((Param_t*)srcParam)->Value;
-	}
-
-	virtual bool ToString(wstring& out, const void* srcParam) const;
-	virtual bool Parse(void* dstParam, const wchar_t* src) const;
-};
-
-class Vec4ParamDesc : public TypedParamDesc<common::VEC4>
-{
-public:
-	typedef Vec4Param Param_t;
-
-	Vec4ParamDesc& SetDefault(const common::VEC4& defaultValue) { DefaultValue = defaultValue; return *this; }
-
-	virtual size_t GetParamSize() const { return sizeof(Param_t); }
-	virtual void SetToDefault(void* param) const
-	{
-		((Param_t*)param)->Value = DefaultValue;
-	}
-	virtual void Copy(void* dstParam, const void* srcParam) const
-	{
-		((Param_t*)dstParam)->Value = ((Param_t*)srcParam)->Value;
-	}
-
-	virtual bool ToString(wstring& out, const void* srcParam) const;
-	virtual bool Parse(void* dstParam, const wchar_t* src) const;
-};
+typedef VecParamDesc<common::VEC2> Vec2ParamDesc;
+typedef VecParamDesc<common::VEC3> Vec3ParamDesc;
+typedef VecParamDesc<common::VEC4> Vec4ParamDesc;
 
 class StructDesc
 {

@@ -5,50 +5,54 @@ namespace RegScript2
 
 void SaveParamToTokDoc(common::tokdoc::Node& dstNode, const void* srcParam, const BoolParamDesc& paramDesc)
 {
-	const BoolParam* boolParam = (const BoolParam*)srcParam;
-	common::tokdoc::NodeFrom(dstNode, boolParam->Value);
+	bool value = paramDesc.GetConst(srcParam);
+	common::tokdoc::NodeFrom(dstNode, value);
 }
 
 void SaveParamToTokDoc(common::tokdoc::Node& dstNode, const void* srcParam, const UintParamDesc& paramDesc)
 {
-	const UintParam* uintParam = (const UintParam*)srcParam;
-	common::tokdoc::NodeFrom(dstNode, uintParam->Value);
+	uint32_t value = paramDesc.GetConst(srcParam);
+	common::tokdoc::NodeFrom(dstNode, value);
 }
 
 void SaveParamToTokDoc(common::tokdoc::Node& dstNode, const void* srcParam, const FloatParamDesc& paramDesc)
 {
-	const FloatParam* floatParam = (const FloatParam*)srcParam;
-	common::tokdoc::NodeFrom(dstNode, floatParam->Value);
+	float value = paramDesc.GetConst(srcParam);
+	common::tokdoc::NodeFrom(dstNode, value);
 }
 
 void SaveParamToTokDoc(common::tokdoc::Node& dstNode, const void* srcParam, const StringParamDesc& paramDesc)
 {
-	const StringParam* stringParam = (const StringParam*)srcParam;
-	common::tokdoc::NodeFrom(dstNode, stringParam->Value);
+	wstring value;
+	paramDesc.GetConst(value, srcParam);
+	common::tokdoc::NodeFrom(dstNode, value);
 }
 
 void SaveParamToTokDoc(common::tokdoc::Node& dstNode, const void* srcParam, const GameTimeParamDesc& paramDesc)
 {
-	const GameTimeParam* gameTimeParam = (const GameTimeParam*)srcParam;
-	common::tokdoc::NodeFrom(dstNode, gameTimeParam->Value.ToSeconds_d());
+	common::GameTime value = paramDesc.GetConst(srcParam);
+	common::tokdoc::NodeFrom(dstNode, value.ToSeconds_d());
 }
 
 void SaveParamToTokDoc(common::tokdoc::Node& dstNode, const void* srcParam, const Vec2ParamDesc& paramDesc)
 {
-	const Vec2Param* vecParam = (const Vec2Param*)srcParam;
-	common::tokdoc::NodeFrom(dstNode, vecParam->Value);
+	common::VEC2 value;
+	paramDesc.GetConst(value, srcParam);
+	common::tokdoc::NodeFrom(dstNode, value);
 }
 
 void SaveParamToTokDoc(common::tokdoc::Node& dstNode, const void* srcParam, const Vec3ParamDesc& paramDesc)
 {
-	const Vec3Param* vecParam = (const Vec3Param*)srcParam;
-	common::tokdoc::NodeFrom(dstNode, vecParam->Value);
+	common::VEC3 value;
+	paramDesc.GetConst(value, srcParam);
+	common::tokdoc::NodeFrom(dstNode, value);
 }
 
 void SaveParamToTokDoc(common::tokdoc::Node& dstNode, const void* srcParam, const Vec4ParamDesc& paramDesc)
 {
-	const Vec4Param* vecParam = (const Vec4Param*)srcParam;
-	common::tokdoc::NodeFrom(dstNode, vecParam->Value);
+	common::VEC4 value;
+	paramDesc.GetConst(value, srcParam);
+	common::tokdoc::NodeFrom(dstNode, value);
 }
 
 void SaveParamToTokDoc(common::tokdoc::Node& dstNode, const void* srcParam, const StructParamDesc& paramDesc)
@@ -130,9 +134,12 @@ static inline bool IsFlagRequired(uint32_t flags)
 
 bool LoadParamFromTokDoc(void* dstParam, const BoolParamDesc& paramDesc, const common::tokdoc::Node& srcNode, const STokDocLoadConfig& config)
 {
-	BoolParam* boolParam = (BoolParam*)dstParam;
-	if(common::tokdoc::NodeTo(boolParam->Value, srcNode, IsFlagRequired(config.Flags)))
+	bool value;
+	if(common::tokdoc::NodeTo(value, srcNode, IsFlagRequired(config.Flags)))
+	{
+		paramDesc.SetConst(dstParam, value);
 		return true;
+	}
 	else
 	{
 		if((config.Flags & TOKDOC_FLAG_DEFAULT))
@@ -145,9 +152,12 @@ bool LoadParamFromTokDoc(void* dstParam, const BoolParamDesc& paramDesc, const c
 
 bool LoadParamFromTokDoc(void* dstParam, const UintParamDesc& paramDesc, const common::tokdoc::Node& srcNode, const STokDocLoadConfig& config)
 {
-	UintParam* uintParam = (UintParam*)dstParam;
-	if(common::tokdoc::NodeTo(uintParam->Value, srcNode, IsFlagRequired(config.Flags)))
+	uint32_t value;
+	if(common::tokdoc::NodeTo(value, srcNode, IsFlagRequired(config.Flags)))
+	{
+		paramDesc.SetConst(dstParam, value);
 		return true;
+	}
 	else
 	{
 		if((config.Flags & TOKDOC_FLAG_DEFAULT))
@@ -160,9 +170,12 @@ bool LoadParamFromTokDoc(void* dstParam, const UintParamDesc& paramDesc, const c
 
 bool LoadParamFromTokDoc(void* dstParam, const FloatParamDesc& paramDesc, const common::tokdoc::Node& srcNode, const STokDocLoadConfig& config)
 {
-	FloatParam* floatParam = (FloatParam*)dstParam;
-	if(common::tokdoc::NodeTo(floatParam->Value, srcNode, IsFlagRequired(config.Flags)))
+	float value;
+	if(common::tokdoc::NodeTo(value, srcNode, IsFlagRequired(config.Flags)))
+	{
+		paramDesc.SetConst(dstParam, value);
 		return true;
+	}
 	else
 	{
 		if((config.Flags & TOKDOC_FLAG_DEFAULT))
@@ -175,9 +188,12 @@ bool LoadParamFromTokDoc(void* dstParam, const FloatParamDesc& paramDesc, const 
 
 bool LoadParamFromTokDoc(void* dstParam, const StringParamDesc& paramDesc, const common::tokdoc::Node& srcNode, const STokDocLoadConfig& config)
 {
-	StringParam* stringParam = (StringParam*)dstParam;
-	if(common::tokdoc::NodeTo(stringParam->Value, srcNode, IsFlagRequired(config.Flags)))
+	wstring value;
+	if(common::tokdoc::NodeTo(value, srcNode, IsFlagRequired(config.Flags)))
+	{
+		paramDesc.SetConst(dstParam, value.c_str());
 		return true;
+	}
 	else
 	{
 		if((config.Flags & TOKDOC_FLAG_DEFAULT))
@@ -193,8 +209,7 @@ bool LoadParamFromTokDoc(void* dstParam, const GameTimeParamDesc& paramDesc, con
 	double seconds = 0.;
 	if(common::tokdoc::NodeTo(seconds, srcNode, IsFlagRequired(config.Flags)))
 	{
-		GameTimeParam* gameTimeParam = (GameTimeParam*)dstParam;
-		gameTimeParam->Value = common::SecondsToGameTime(seconds);
+		paramDesc.SetConst(dstParam, common::SecondsToGameTime(seconds));
 		return true;
 	}
 	else
@@ -209,9 +224,12 @@ bool LoadParamFromTokDoc(void* dstParam, const GameTimeParamDesc& paramDesc, con
 
 bool LoadParamFromTokDoc(void* dstParam, const Vec2ParamDesc& paramDesc, const common::tokdoc::Node& srcNode, const STokDocLoadConfig& config)
 {
-	Vec2Param* vecParam = (Vec2Param*)dstParam;
-	if(common::tokdoc::NodeTo(vecParam->Value, srcNode, IsFlagRequired(config.Flags)))
+	common::VEC2 value;
+	if(common::tokdoc::NodeTo(value, srcNode, IsFlagRequired(config.Flags)))
+	{
+		paramDesc.SetConst(dstParam, value);
 		return true;
+	}
 	else
 	{
 		if((config.Flags & TOKDOC_FLAG_DEFAULT))
@@ -224,9 +242,12 @@ bool LoadParamFromTokDoc(void* dstParam, const Vec2ParamDesc& paramDesc, const c
 
 bool LoadParamFromTokDoc(void* dstParam, const Vec3ParamDesc& paramDesc, const common::tokdoc::Node& srcNode, const STokDocLoadConfig& config)
 {
-	Vec3Param* vecParam = (Vec3Param*)dstParam;
-	if(common::tokdoc::NodeTo(vecParam->Value, srcNode, IsFlagRequired(config.Flags)))
+	common::VEC3 value;
+	if(common::tokdoc::NodeTo(value, srcNode, IsFlagRequired(config.Flags)))
+	{
+		paramDesc.SetConst(dstParam, value);
 		return true;
+	}
 	else
 	{
 		if((config.Flags & TOKDOC_FLAG_DEFAULT))
@@ -239,9 +260,12 @@ bool LoadParamFromTokDoc(void* dstParam, const Vec3ParamDesc& paramDesc, const c
 
 bool LoadParamFromTokDoc(void* dstParam, const Vec4ParamDesc& paramDesc, const common::tokdoc::Node& srcNode, const STokDocLoadConfig& config)
 {
-	Vec4Param* vecParam = (Vec4Param*)dstParam;
-	if(common::tokdoc::NodeTo(vecParam->Value, srcNode, IsFlagRequired(config.Flags)))
+	common::VEC4 value;
+	if(common::tokdoc::NodeTo(value, srcNode, IsFlagRequired(config.Flags)))
+	{
+		paramDesc.SetConst(dstParam, value);
 		return true;
+	}
 	else
 	{
 		if((config.Flags & TOKDOC_FLAG_DEFAULT))
