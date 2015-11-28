@@ -166,7 +166,7 @@ void SimpleStruct::CheckCustomValues() const
 const rs2::StructDesc* SimpleStruct::GetStructDesc()
 {
 	RS2_GET_STRUCT_DESC_BEGIN(SimpleStruct);
-	RS2_ADD_PARAM_BOOL(BoolParam, rs2::STORAGE::PARAM, true);
+	RS2_ADD_PARAM_BOOL(BoolParam, rs2::STORAGE::PARAM).SetDefault(true);
 	RS2_ADD_PARAM_UINT(UintParam, rs2::STORAGE::PARAM, 123u);
 	RS2_ADD_PARAM_FLOAT(FloatParam, rs2::STORAGE::PARAM, 3.14f);
 	RS2_ADD_PARAM_STRING(StringParam, rs2::STORAGE::PARAM, L"StringDefault");
@@ -1410,11 +1410,11 @@ unique_ptr<rs2::StructDesc> RawValuesStruct::CreateStructDesc(uint32_t additiona
 	structDesc->AddParam(
 		L"UintValue",
 		offsetof(RawValuesStruct, UintValue),
-		new rs2::UintParamDesc(rs2::STORAGE::RAW, 123, 0, 100, 200));
+		new rs2::UintParamDesc(rs2::STORAGE::RAW, 123)).SetMin(100).SetMax(200);
 	structDesc->AddParam(
 		L"FloatValue",
 		offsetof(RawValuesStruct, FloatValue),
-		new rs2::FloatParamDesc(rs2::STORAGE::RAW, 3.14f, 0, 100.f, 200.f));
+		new rs2::FloatParamDesc(rs2::STORAGE::RAW, 3.14f)).SetMin(100.f).SetMax(200.f);
 	structDesc->AddParam(
 		L"StringValue",
 		offsetof(RawValuesStruct, StringValue),
@@ -1423,34 +1423,30 @@ unique_ptr<rs2::StructDesc> RawValuesStruct::CreateStructDesc(uint32_t additiona
 		L"GameTimeValue",
 		offsetof(RawValuesStruct, GameTimeValue),
 		new rs2::GameTimeParamDesc(rs2::STORAGE::RAW,
-			common::MillisecondsToGameTime(1023),
-			0,
-			common::SecondsToGameTime(100.),
-			common::SecondsToGameTime(200.)));
+			common::MillisecondsToGameTime(1023))).
+			SetMin(common::SecondsToGameTime(100.)).
+			SetMax(common::SecondsToGameTime(200.));
 	structDesc->AddParam(
 		L"Vec2Value",
 		offsetof(RawValuesStruct, Vec2Value),
 		new rs2::Vec2ParamDesc(rs2::STORAGE::RAW,
-			VEC2(1.f, 2.f),
-			0,
-			VEC2(100.f, 100.f),
-			VEC2(200.f, 200.f)));
+			VEC2(1.f, 2.f))).
+			SetMin(VEC2(100.f, 100.f)).
+			SetMax(VEC2(200.f, 200.f));
 	structDesc->AddParam(
 		L"Vec3Value",
 		offsetof(RawValuesStruct, Vec3Value),
 		new rs2::Vec3ParamDesc(rs2::STORAGE::RAW,
-			VEC3(1.f, 2.f, 3.f),
-			0,
-			VEC3(100.f, 100.f, 100.f),
-			VEC3(200.f, 200.f, 200.f)));
+			VEC3(1.f, 2.f, 3.f))).
+			SetMin(VEC3(100.f, 100.f, 100.f)).
+			SetMax(VEC3(200.f, 200.f, 200.f));
 	structDesc->AddParam(
 		L"Vec4Value",
 		offsetof(RawValuesStruct, Vec4Value),
 		new rs2::Vec4ParamDesc(rs2::STORAGE::RAW,
-			VEC4(1.f, 2.f, 3.f, 4.f),
-			0,
-			VEC4(100.f, 100.f, 100.f, 100.f),
-			VEC4(200.f, 200.f, 200.f, 200.f)));
+			VEC4(1.f, 2.f, 3.f, 4.f))).
+			SetMin(VEC4(100.f, 100.f, 100.f, 100.f)).
+			SetMax(VEC4(200.f, 200.f, 200.f, 200.f));
 
 	for(auto paramPtr : structDesc->Params)
 		paramPtr->Flags |= additionalFlags;
