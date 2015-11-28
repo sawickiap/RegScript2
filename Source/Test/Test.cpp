@@ -1271,11 +1271,22 @@ TEST(FindObjParamByPath, Simple)
 	ASSERT_TRUE( rs2::FindObjParamByPath(
 		param, paramDesc,
 		&s, *structDesc,
-		L"UintParam") );
+		L"UintParam", true) );
 	ASSERT_TRUE(param != nullptr);
 	ASSERT_TRUE(paramDesc != nullptr);
 	ASSERT_TRUE(typeid(rs2::UintParamDesc) == typeid(*paramDesc));
 	rs2::UintParam* uintParam = (rs2::UintParam*)param;
+	EXPECT_EQ(123, uintParam->GetConst());
+
+	// Case-insensitive
+	ASSERT_TRUE( rs2::FindObjParamByPath(
+		param, paramDesc,
+		&s, *structDesc,
+		L"uintPARAM", false) );
+	ASSERT_TRUE(param != nullptr);
+	ASSERT_TRUE(paramDesc != nullptr);
+	ASSERT_TRUE(typeid(rs2::UintParamDesc) == typeid(*paramDesc));
+	uintParam = (rs2::UintParam*)param;
 	EXPECT_EQ(123, uintParam->GetConst());
 }
 
@@ -1291,7 +1302,7 @@ TEST(FindObjParamByPath, SubStruct)
 	ASSERT_TRUE( rs2::FindObjParamByPath(
 		param, paramDesc,
 		&s, *containerStructDesc,
-		L"StructParam\\UintParam") );
+		L"StructParam\\UintParam", true) );
 	ASSERT_TRUE(param != nullptr);
 	ASSERT_TRUE(paramDesc != nullptr);
 	ASSERT_TRUE(typeid(rs2::UintParamDesc) == typeid(*paramDesc));
@@ -1311,7 +1322,7 @@ TEST(FindObjParamByPath, FixedSizeArray)
 	ASSERT_TRUE( rs2::FindObjParamByPath(
 		param, paramDesc,
 		&s, *containerStructDesc,
-		L"FixedSizeArrayParam[2]") );
+		L"FixedSizeArrayParam[2]", true) );
 	ASSERT_TRUE(param != nullptr);
 	ASSERT_TRUE(paramDesc != nullptr);
 	ASSERT_TRUE(typeid(rs2::UintParamDesc) == typeid(*paramDesc));
@@ -1330,43 +1341,47 @@ TEST(FindObjParamByPath, Negative)
 	EXPECT_FALSE( rs2::FindObjParamByPath(
 		param, paramDesc,
 		&s, *containerStructDesc,
-		L"NonExistingParam") );
+		L"uintPARAM", true) );
 	EXPECT_FALSE( rs2::FindObjParamByPath(
 		param, paramDesc,
 		&s, *containerStructDesc,
-		L"StructParam\\") );
+		L"NonExistingParam", true) );
 	EXPECT_FALSE( rs2::FindObjParamByPath(
 		param, paramDesc,
 		&s, *containerStructDesc,
-		L"\\StructParam") );
+		L"StructParam\\", true) );
 	EXPECT_FALSE( rs2::FindObjParamByPath(
 		param, paramDesc,
 		&s, *containerStructDesc,
-		L"FixedSizeArrayParam[1000000]") );
+		L"\\StructParam", true) );
 	EXPECT_FALSE( rs2::FindObjParamByPath(
 		param, paramDesc,
 		&s, *containerStructDesc,
-		L"StructParam\\NonExistingParam") );
+		L"FixedSizeArrayParam[1000000]", true) );
 	EXPECT_FALSE( rs2::FindObjParamByPath(
 		param, paramDesc,
 		&s, *containerStructDesc,
-		L"FixedSizeArrayParam[1") );
+		L"StructParam\\NonExistingParam", true) );
 	EXPECT_FALSE( rs2::FindObjParamByPath(
 		param, paramDesc,
 		&s, *containerStructDesc,
-		L"FixedSizeArrayParam[1][0]") );
+		L"FixedSizeArrayParam[1", true) );
 	EXPECT_FALSE( rs2::FindObjParamByPath(
 		param, paramDesc,
 		&s, *containerStructDesc,
-		L"FixedSizeArrayParam[1]\\") );
+		L"FixedSizeArrayParam[1][0]", true) );
 	EXPECT_FALSE( rs2::FindObjParamByPath(
 		param, paramDesc,
 		&s, *containerStructDesc,
-		L"FixedSizeArrayParam[1]\\NoParam") );
+		L"FixedSizeArrayParam[1]\\", true) );
 	EXPECT_FALSE( rs2::FindObjParamByPath(
 		param, paramDesc,
 		&s, *containerStructDesc,
-		L"StructParam\\NonExistingParam") );
+		L"FixedSizeArrayParam[1]\\NoParam", true) );
+	EXPECT_FALSE( rs2::FindObjParamByPath(
+		param, paramDesc,
+		&s, *containerStructDesc,
+		L"StructParam\\NonExistingParam", true) );
 }
 
 struct RawValuesStruct

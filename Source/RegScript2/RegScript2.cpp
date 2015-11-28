@@ -8,6 +8,9 @@ static const wchar_t* const ERR_MSG_PARAM_READ_ONLY = L"Parameter is read-only."
 static const wchar_t* const ERR_MSG_PARAM_WRITE_ONLY = L"Paramter is write-only.";
 static const wchar_t* const ERR_MSG_CANNOT_SET_VALUE = L"Cannot set parameter value.";
 
+struct StorageFunction { };
+StorageFunction storageFunction;
+
 ////////////////////////////////////////////////////////////////////////////////
 // class BoolParam
 
@@ -152,11 +155,16 @@ void StructDesc::CopyObj(void* dstObj, const void* srcObj) const
 		CopyParam(dstObj, srcObj, i);
 }
 
-size_t StructDesc::Find(const wchar_t* name) const
+size_t StructDesc::Find(const wchar_t* name, bool caseSensitive) const
 {
 	for(size_t i = 0, count = Names.size(); i < count; ++i)
-		if(Names[i] == name)
+	{
+		if((caseSensitive && Names[i] == name) ||
+			(!caseSensitive && _wcsicmp(Names[i].c_str(), name) == 0))
+		{
 			return i;
+		}
+	}
 	return (size_t)-1;
 }
 
@@ -1183,7 +1191,7 @@ ParamName - Enters parameter of current object.
 bool FindObjParamByPath(
 	void*& outParam, const ParamDesc*& outParamDesc,
 	void* obj, const StructDesc& structDesc,
-	const wchar_t* path)
+	const wchar_t* path, bool caseSensitive)
 {
 	void* currObj = obj;
 	const StructDesc* currStructDesc = &structDesc;
@@ -1236,7 +1244,7 @@ bool FindObjParamByPath(
 			wstring paramName = endIndex == wstring::npos ?
 				pathStr.substr(pathIndex) :
 				pathStr.substr(pathIndex, endIndex);
-			size_t paramIndex = currStructDesc->Find(paramName.c_str());
+			size_t paramIndex = currStructDesc->Find(paramName.c_str(), caseSensitive);
 			if(paramIndex == (size_t)-1)
 				return false;
 			outParamDesc = currStructDesc->GetParamDesc(paramIndex);

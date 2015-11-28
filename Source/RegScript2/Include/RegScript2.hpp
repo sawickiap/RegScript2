@@ -179,6 +179,9 @@ enum class STORAGE
 	FUNCTION, // No actual value, but GetFunc and/or SetFunc.
 };
 
+typedef struct StorageFunction StorageFunction;
+extern StorageFunction storageFunction;
+
 class ParamDesc
 {
 public:
@@ -305,7 +308,7 @@ public:
 		TypedParamDesc<bool>(storage, defaultValue, flags)
 	{
 	}
-	BoolParamDesc(GetFunc_t getFunc, SetFunc_t setFunc, Value_t defaultValue = Value_t(), uint32_t flags = 0) :
+	BoolParamDesc(StorageFunction& storageFunction, GetFunc_t getFunc, SetFunc_t setFunc, Value_t defaultValue = Value_t(), uint32_t flags = 0) :
 		TypedParamDesc<bool>(STORAGE::FUNCTION, defaultValue, flags),
 		GetFunc(getFunc),
 		SetFunc(setFunc)
@@ -364,6 +367,7 @@ public:
 	{
 	}
 	UintParamDesc(
+		StorageFunction& storageFunction,
 		GetFunc_t getFunc,
 		SetFunc_t setFunc,
 		Value_t defaultValue = Value_t(),
@@ -421,31 +425,36 @@ public:
 	};
 
 	// When min-max values are active, non-finite values are also not accepted.
-	Value_t MinValue, MaxValue;
+	Value_t MinValue, MaxValue, Step;
 
 	FloatParamDesc(
 		STORAGE storage,
 		Value_t defaultValue = Value_t(),
 		uint32_t flags = 0,
 		Value_t minValue = -FLT_MAX,
-		Value_t maxValue = FLT_MAX) :
+		Value_t maxValue = FLT_MAX,
+		Value_t step = 1.f) :
 		TypedParamDesc<float>(storage, defaultValue, flags),
 		MinValue(minValue),
-		MaxValue(maxValue)
+		MaxValue(maxValue),
+		Step(step)
 	{
 	}
 	FloatParamDesc(
+		StorageFunction& storageFunction,
 		GetFunc_t getFunc,
 		SetFunc_t setFunc,
 		Value_t defaultValue = Value_t(),
 		uint32_t flags = 0,
 		Value_t minValue = -FLT_MAX,
-		Value_t maxValue = FLT_MAX) :
+		Value_t maxValue = FLT_MAX,
+		Value_t step = 1.f) :
 		TypedParamDesc<float>(STORAGE::FUNCTION, defaultValue, flags),
 		GetFunc(getFunc),
 		SetFunc(setFunc),
 		MinValue(minValue),
-		MaxValue(maxValue)
+		MaxValue(maxValue),
+		Step(step)
 	{
 	}
 
@@ -488,7 +497,7 @@ public:
 		TypedParamDesc<std::wstring>(storage, defaultValue, flags)
 	{
 	}
-	StringParamDesc(GetFunc_t getFunc, SetFunc_t setFunc, const Value_t& defaultValue = Value_t(), uint32_t flags = 0) :
+	StringParamDesc(StorageFunction& storageFunction, GetFunc_t getFunc, SetFunc_t setFunc, const Value_t& defaultValue = Value_t(), uint32_t flags = 0) :
 		TypedParamDesc<std::wstring>(STORAGE::FUNCTION, defaultValue, flags),
 		GetFunc(getFunc),
 		SetFunc(setFunc)
@@ -543,6 +552,7 @@ public:
 	{
 	}
 	GameTimeParamDesc(
+		StorageFunction& storageFunction,
 		GetFunc_t getFunc,
 		SetFunc_t setFunc,
 		Value_t defaultValue = Value_t(),
@@ -607,6 +617,7 @@ public:
 	{
 	}
 	VecParamDesc(
+		StorageFunction& storageFunction,
 		GetFunc_t getFunc,
 		SetFunc_t setFunc,
 		Value_t defaultValue = Value_t(),
@@ -688,7 +699,7 @@ public:
 	void CopyObj(void* dstObj, const void* srcObj) const;
 
 	// Returns index. Not found: returns -1.
-	size_t Find(const wchar_t* name) const;
+	size_t Find(const wchar_t* name, bool caseSensitive = true) const;
 	ParamDesc* GetParamDesc(size_t index);
 	const ParamDesc* GetParamDesc(size_t index) const;
 
@@ -701,7 +712,7 @@ private:
 bool FindObjParamByPath(
 	void*& outParam, const ParamDesc*& outParamDesc,
 	void* obj, const StructDesc& structDesc,
-	const wchar_t* path);
+	const wchar_t* path, bool caseSensitive);
 
 inline size_t StructParamDesc::GetParamSize() const
 {
@@ -792,43 +803,49 @@ inline size_t FixedSizeArrayParamDesc::GetParamSize() const
 		offsetof(Struct_t, paramName), \
 		new rs2::Vec4ParamDesc(storage, __VA_ARGS__));
 
+
+// Initializes float param with Format=Percent, Min=0, Max=1, Step=0.02.
+#define RS2_ADD_PARAM_FLOAT_PERCENT(paramName, storage, defaultValue) \
+	RS2_ADD_PARAM_FLOAT(paramName, storage, defaultValue, RegScript2::FloatParamDesc::FLAG_FORMAT_PERCENT, 0.f, 1.f, 0.02f)
+
+
 #define RS2_ADD_PARAM_BOOL_FUNCTION(paramName, getFunc, setFunc, ...) \
 	structDesc->AddParam( \
 		L#paramName, \
 		0, \
-		new rs2::BoolParamDesc(getFunc, setFunc, __VA_ARGS__));
+		new rs2::BoolParamDesc(RegScript2::storageFunction, getFunc, setFunc, __VA_ARGS__));
 #define RS2_ADD_PARAM_UINT_FUNCTION(paramName, getFunc, setFunc, ...) \
 	structDesc->AddParam( \
 		L#paramName, \
 		0, \
-		new rs2::UintParamDesc(getFunc, setFunc, __VA_ARGS__));
+		new rs2::UintParamDesc(RegScript2::storageFunction, getFunc, setFunc, __VA_ARGS__));
 #define RS2_ADD_PARAM_FLOAT_FUNCTION(paramName, getFunc, setFunc, ...) \
 	structDesc->AddParam( \
 		L#paramName, \
 		0, \
-		new rs2::FloatParamDesc(getFunc, setFunc, __VA_ARGS__));
+		new rs2::FloatParamDesc(RegScript2::storageFunction, getFunc, setFunc, __VA_ARGS__));
 #define RS2_ADD_PARAM_STRING_FUNCTION(paramName, getFunc, setFunc, ...) \
 	structDesc->AddParam( \
 		L#paramName, \
 		0, \
-		new rs2::StringParamDesc(getFunc, setFunc, __VA_ARGS__));
+		new rs2::StringParamDesc(RegScript2::storageFunction, getFunc, setFunc, __VA_ARGS__));
 #define RS2_ADD_PARAM_GAMETIME_FUNCTION(paramName, getFunc, setFunc, ...) \
 	structDesc->AddParam( \
 		L#paramName, \
 		0, \
-		new rs2::GameTimeParamDesc(getFunc, setFunc, __VA_ARGS__));
+		new rs2::GameTimeParamDesc(RegScript2::storageFunction, getFunc, setFunc, __VA_ARGS__));
 #define RS2_ADD_PARAM_VEC2_FUNCTION(paramName, getFunc, setFunc, ...) \
 	structDesc->AddParam( \
 		L#paramName, \
 		0, \
-		new rs2::Vec2ParamDesc(getFunc, setFunc, __VA_ARGS__));
+		new rs2::Vec2ParamDesc(RegScript2::storageFunction, getFunc, setFunc, __VA_ARGS__));
 #define RS2_ADD_PARAM_VEC3_FUNCTION(paramName, getFunc, setFunc, ...) \
 	structDesc->AddParam( \
 		L#paramName, \
 		0, \
-		new rs2::Vec3ParamDesc(getFunc, setFunc, __VA_ARGS__));
+		new rs2::Vec3ParamDesc(RegScript2::storageFunction, getFunc, setFunc, __VA_ARGS__));
 #define RS2_ADD_PARAM_VEC4_FUNCTION(paramName, getFunc, setFunc, ...) \
 	structDesc->AddParam( \
 		L#paramName, \
 		0, \
-		new rs2::Vec4ParamDesc(getFunc, setFunc, __VA_ARGS__));
+		new rs2::Vec4ParamDesc(RegScript2::storageFunction, getFunc, setFunc, __VA_ARGS__));
