@@ -462,6 +462,7 @@ public:
 
 	bool ValueInMinMax(Value_t value) const { return value <= MaxValue && value >= MinValue; }
 	void ClampValueToMinMax(Value_t& value) const { if(!(value >= MinValue)) value = MinValue; else if(!(value <= MaxValue)) value = MaxValue; }
+	bool HasMinMax() const { return MinValue != -FLT_MAX && MaxValue != FLT_MAX; }
 
 	Value_t* AccessAsRaw(void* param) const { assert(GetStorage() == STORAGE::RAW); return (Value_t*)param; }
 	const Value_t* AccessAsRaw(const void* param) const { assert(GetStorage() == STORAGE::RAW); return (const Value_t*)param; }
@@ -804,9 +805,9 @@ inline size_t FixedSizeArrayParamDesc::GetParamSize() const
 		new rs2::Vec4ParamDesc(storage, __VA_ARGS__));
 
 
-// Initializes float param with Format=Percent, Min=0, Max=1, Step=0.02.
+// Initializes float param with Format=Percent|MinMaxClampOnSet, Min=0, Max=1, Step=0.02.
 #define RS2_ADD_PARAM_FLOAT_PERCENT(paramName, storage, defaultValue) \
-	RS2_ADD_PARAM_FLOAT(paramName, storage, defaultValue, RegScript2::FloatParamDesc::FLAG_FORMAT_PERCENT, 0.f, 1.f, 0.02f)
+	RS2_ADD_PARAM_FLOAT(paramName, storage, defaultValue, RegScript2::FloatParamDesc::FLAG_FORMAT_PERCENT | rs2::ParamDesc::FLAG_MINMAX_CLAMP_ON_SET, 0.f, 1.f, 0.02f)
 
 
 #define RS2_ADD_PARAM_BOOL_FUNCTION(paramName, getFunc, setFunc, ...) \
