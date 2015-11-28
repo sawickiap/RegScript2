@@ -17,9 +17,13 @@ static void DebugPrintParamValue(
 	IPrinter& printer,
 	uint32_t indentLevel,
 	const wchar_t* paramName,
-	const wchar_t* valueStr)
+	const wchar_t* valueStr,
+	const wchar_t* unitName)
 {
-	printer.printf(L"%s%s = %s", GetIndent(indentLevel), paramName, valueStr);
+	if(!common::StrIsEmpty(unitName))
+		printer.printf(L"%s%s = %s [%s]", GetIndent(indentLevel), paramName, valueStr, unitName);
+	else
+		printer.printf(L"%s%s = %s", GetIndent(indentLevel), paramName, valueStr);
 }
 
 static void DebugPrintParamDefault(
@@ -32,7 +36,7 @@ static void DebugPrintParamDefault(
 	wstring valueStr;
 	bool ok = paramDesc.ToString(valueStr, srcParam);
 	assert(ok);
-	DebugPrintParamValue(printer, indentLevel, paramName, valueStr.c_str());
+	DebugPrintParamValue(printer, indentLevel, paramName, valueStr.c_str(), paramDesc.UnitName.c_str());
 }
 
 static void DebugPrintStructParam(
@@ -42,7 +46,11 @@ static void DebugPrintStructParam(
 	const StructParamDesc& paramDesc,
 	uint32_t indentLevel)
 {
-	printer.printf(L"%s%s:", GetIndent(indentLevel), paramName);
+	if(!paramDesc.UnitName.empty())
+		printer.printf(L"%s%s: [%s]", GetIndent(indentLevel), paramName, paramDesc.UnitName.c_str());
+	else
+		printer.printf(L"%s%s:", GetIndent(indentLevel), paramName);
+
 	DebugPrintObj(printer, srcParam, *paramDesc.GetStructDesc(), indentLevel + 1);
 }
 

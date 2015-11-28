@@ -197,11 +197,13 @@ public:
 	};
 
 	uint32_t Flags;
+	std::wstring UnitName;
 
 	ParamDesc(STORAGE storage, uint32_t flags) : Flags(flags), m_Storage(storage) { }
 	virtual ~ParamDesc() { }
 
 	ParamDesc& SetFlags(uint32_t flags) { Flags = flags; return *this; }
+	ParamDesc& SetUnitName(const wchar_t* unitName) { UnitName = unitName; return *this; }
 
 	STORAGE GetStorage() const { return m_Storage; }
 
