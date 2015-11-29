@@ -64,6 +64,8 @@ public:
 template<typename Enum_t>
 class TypedEnumDesc : public EnumDesc
 {
+	static_assert(sizeof(Enum_t) == sizeof(int32_t), "Enum type has size different than int32_t.");
+
 public:
 	TypedEnumDesc(
 		const wchar_t* name,
