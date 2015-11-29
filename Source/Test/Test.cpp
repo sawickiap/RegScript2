@@ -116,6 +116,129 @@ TEST(Utils, FriendlyStrToSeconds)
 	EXPECT_DOUBLE_EQ((100. * 60. + 20.) * 60. + 55.5, seconds);
 }
 
+enum OldEnumWithoutValues
+{
+	OldEnumWithoutValues_Value0,
+	OldEnumWithoutValues_Value1,
+	OldEnumWithoutValues_Value2,
+	OldEnumWithoutValues_Count
+};
+static const wchar_t* OldEnumWithoutValuesNames[] = {
+	L"Value0",
+	L"Value1",
+	L"Value2",
+};
+static rs2::TypedEnumDesc<OldEnumWithoutValues> g_OldEnumWithoutValuesDesc {
+	L"OldEnumWithoutValues",
+	OldEnumWithoutValues_Count,
+	OldEnumWithoutValuesNames
+};
+
+enum class NewEnumWithValues
+{
+	NegativeValue = -1,
+	ZeroValue = 0,
+	PositiveValue = 10,
+	BigValue = 0x7fffffff,
+};
+static const wchar_t* NewEnumWithValuesNames[] = {
+	L"NegativeValue",
+	L"ZeroValue",
+	L"PositiveValue",
+	L"BigValue",
+};
+static const NewEnumWithValues NewEnumWithValuesValues[] = {
+	NewEnumWithValues::NegativeValue,
+	NewEnumWithValues::ZeroValue,
+	NewEnumWithValues::PositiveValue,
+	NewEnumWithValues::BigValue,
+};
+static rs2::TypedEnumDesc<NewEnumWithValues> g_NewEnumWithValuesDesc = {
+	L"NewEnumWithValues",
+	_countof(NewEnumWithValuesNames),
+	NewEnumWithValuesNames,
+	NewEnumWithValuesValues
+};
+
+TEST(Utils, OldEnumWithoutValues)
+{
+	EXPECT_EQ(0, g_OldEnumWithoutValuesDesc.GetValue(0));
+	EXPECT_EQ(1, g_OldEnumWithoutValuesDesc.GetValue(1));
+	EXPECT_EQ(2, g_OldEnumWithoutValuesDesc.GetValue(2));
+
+	EXPECT_EQ(1, g_OldEnumWithoutValuesDesc.FindItemByName(L"Value1", true));
+	EXPECT_EQ(rs2::EnumDesc::INVALID_INDEX, g_OldEnumWithoutValuesDesc.FindItemByName(L"VALUE1", true));
+	EXPECT_EQ(1, g_OldEnumWithoutValuesDesc.FindItemByName(L"VALUE1", false));
+	EXPECT_EQ(rs2::EnumDesc::INVALID_INDEX, g_OldEnumWithoutValuesDesc.FindItemByName(L"NonExisting", false));
+	EXPECT_EQ(rs2::EnumDesc::INVALID_INDEX, g_OldEnumWithoutValuesDesc.FindItemByName(L"NonExisting", true));
+
+	EXPECT_EQ(1, g_OldEnumWithoutValuesDesc.FindItemByValue(1));
+	EXPECT_EQ(rs2::EnumDesc::INVALID_INDEX, g_OldEnumWithoutValuesDesc.FindItemByValue(666));
+
+	EXPECT_TRUE(g_OldEnumWithoutValuesDesc.ValueIsValid(2));
+	EXPECT_FALSE(g_OldEnumWithoutValuesDesc.ValueIsValid(666));
+
+	OldEnumWithoutValues val;
+	std::wstring str;
+	g_OldEnumWithoutValuesDesc.ValueToStr(str, OldEnumWithoutValues_Value2);
+	EXPECT_EQ(L"Value2", str);
+	g_OldEnumWithoutValuesDesc.ValueToStr(str, -666);
+	EXPECT_EQ(L"-666", str);
+
+	EXPECT_TRUE(g_OldEnumWithoutValuesDesc.StrToValue(val, L"Value1", true, false));
+	EXPECT_EQ(OldEnumWithoutValues_Value1, val);
+
+	EXPECT_FALSE(g_OldEnumWithoutValuesDesc.StrToValue(val, L"VALUE1", true, false));
+
+	EXPECT_TRUE(g_OldEnumWithoutValuesDesc.StrToValue(val, L"VALUE1", false, false));
+	EXPECT_EQ(OldEnumWithoutValues_Value1, val);
+
+	EXPECT_FALSE(g_OldEnumWithoutValuesDesc.StrToValue(val, L"-666", false, false));
+
+	EXPECT_TRUE(g_OldEnumWithoutValuesDesc.StrToValue(val, L"-666", false, true));
+	EXPECT_EQ(-666, (int32_t)val);
+}
+
+TEST(Utils, NewEnumWithValues)
+{
+	EXPECT_EQ(-1, g_NewEnumWithValuesDesc.GetValue(0));
+	EXPECT_EQ(0, g_NewEnumWithValuesDesc.GetValue(1));
+	EXPECT_EQ(10, g_NewEnumWithValuesDesc.GetValue(2));
+	EXPECT_EQ(0x7fffffff, g_NewEnumWithValuesDesc.GetValue(3));
+
+	EXPECT_EQ(2, g_NewEnumWithValuesDesc.FindItemByName(L"PositiveValue", true));
+	EXPECT_EQ(rs2::EnumDesc::INVALID_INDEX, g_NewEnumWithValuesDesc.FindItemByName(L"POSITIVEVALUE", true));
+	EXPECT_EQ(2, g_NewEnumWithValuesDesc.FindItemByName(L"POSITIVEVALUE", false));
+	EXPECT_EQ(rs2::EnumDesc::INVALID_INDEX, g_NewEnumWithValuesDesc.FindItemByName(L"NonExisting", false));
+	EXPECT_EQ(rs2::EnumDesc::INVALID_INDEX, g_NewEnumWithValuesDesc.FindItemByName(L"NonExisting", true));
+
+	EXPECT_EQ(2, g_NewEnumWithValuesDesc.FindItemByValue(10));
+	EXPECT_EQ(rs2::EnumDesc::INVALID_INDEX, g_NewEnumWithValuesDesc.FindItemByValue(666));
+
+	EXPECT_TRUE(g_NewEnumWithValuesDesc.ValueIsValid(10));
+	EXPECT_FALSE(g_NewEnumWithValuesDesc.ValueIsValid(666));
+
+	NewEnumWithValues val;
+	std::wstring str;
+	g_NewEnumWithValuesDesc.ValueToStr(str, NewEnumWithValues::PositiveValue);
+	EXPECT_EQ(L"PositiveValue", str);
+	g_NewEnumWithValuesDesc.ValueToStr(str, 666);
+	EXPECT_EQ(L"666", str);
+
+	EXPECT_TRUE(g_NewEnumWithValuesDesc.StrToValue(val, L"PositiveValue", true, false));
+	EXPECT_EQ(NewEnumWithValues::PositiveValue, val);
+
+	EXPECT_FALSE(g_NewEnumWithValuesDesc.StrToValue(val, L"POSITIVEVALUE", true, false));
+
+	EXPECT_TRUE(g_NewEnumWithValuesDesc.StrToValue(val, L"POSITIVEVALUE", false, false));
+	EXPECT_EQ(NewEnumWithValues::PositiveValue, val);
+
+	EXPECT_FALSE(g_NewEnumWithValuesDesc.StrToValue(val, L"-666", false, false));
+
+	EXPECT_TRUE(g_NewEnumWithValuesDesc.StrToValue(val, L"-666", false, true));
+	EXPECT_EQ(-666, (int32_t)val);
+}
+
 class SimpleStruct
 {
 public:

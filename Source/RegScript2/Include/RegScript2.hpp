@@ -24,6 +24,73 @@ extern const wchar_t* const ERR_MSG_VALUE_NOT_CONST;
 
 class StructDesc;
 
+class EnumDesc
+{
+public:
+	static const size_t INVALID_INDEX = (size_t)-1;
+
+	const wchar_t* Name;
+	size_t ItemCount;
+	const wchar_t* const* ItemNames;
+	// Optional. If null, values are just indices to ItemNames: 0, 1, 2, ...
+	const int32_t* ItemValues;
+
+	// All passed pointers must exist during lifetime of this object. Data are not copied.
+	EnumDesc(
+		const wchar_t* name,
+		size_t itemCount,
+		const wchar_t* const* itemNames,
+		const int32_t* itemValues = nullptr);
+	
+	// Works regardless of whether ItemValues != null.
+	int32_t GetValue(size_t index) const
+	{
+		return ItemValues ? ItemValues[index] : (int32_t)index;
+	}
+
+	// Returns index or INVALID_INDEX if not found.
+	size_t FindItemByName(const wchar_t* name, bool caseSensitive) const;
+	// Returns index or INVALID_INDEX if not found.
+	size_t FindItemByValue(int32_t value) const;
+
+	bool ValueIsValid(int32_t value) const
+	{
+		return FindItemByValue(value) != INVALID_INDEX;
+	}
+	void ValueToStr(std::wstring& out, int32_t value) const;
+	bool StrToValue(int32_t& out, const wchar_t* str, bool caseSensitive, bool allowInteger) const;
+};
+
+template<typename Enum_t>
+class TypedEnumDesc : public EnumDesc
+{
+public:
+	TypedEnumDesc(
+		const wchar_t* name,
+		size_t itemCount,
+		const wchar_t* const* itemNames,
+		const int32_t* itemValues = nullptr) :
+		EnumDesc(name, itemCount, itemNames, itemValues)
+	{
+	}
+	TypedEnumDesc(
+		const wchar_t* name,
+		size_t itemCount,
+		const wchar_t* const* itemNames,
+		const Enum_t* itemValues) :
+		EnumDesc(name, itemCount, itemNames, (const int32_t*)itemValues)
+	{
+	}
+
+	using EnumDesc::ValueIsValid;
+	using EnumDesc::ValueToStr;
+	using EnumDesc::StrToValue;
+
+	bool ValueIsValid(Enum_t value) const { return ValueIsValid((int32_t)value); }
+	void ValueToStr(std::wstring& out, Enum_t value) const { ValueToStr(out, (int32_t)value); }
+	bool StrToValue(Enum_t& out, const wchar_t* str, bool caseSensitive, bool allowInteger) const { return StrToValue((int32_t&)out, str, caseSensitive, allowInteger); }
+};
+
 // Class is NOT polymorphic.
 class Param
 {

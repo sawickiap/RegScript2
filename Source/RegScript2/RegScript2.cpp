@@ -12,6 +12,88 @@ struct StorageFunction { };
 StorageFunction storageFunction;
 
 ////////////////////////////////////////////////////////////////////////////////
+// class EnumDesc
+
+EnumDesc::EnumDesc(
+	const wchar_t* name,
+	size_t itemCount,
+	const wchar_t* const* itemNames,
+	const int32_t* itemValues) :
+	Name(name),
+	ItemCount(itemCount),
+	ItemNames(itemNames),
+	ItemValues(itemValues)
+{
+	assert(!common::StrIsEmpty(name));
+	assert(itemCount);
+	assert(itemNames);
+	for(size_t i = 0; i < itemCount; ++i)
+	{
+		assert(!common::StrIsEmpty(itemNames[i]));
+	}
+}
+
+size_t EnumDesc::FindItemByName(const wchar_t* name, bool caseSensitive) const
+{
+	for(size_t i = 0; i < ItemCount; ++i)
+	{
+		if((caseSensitive && wcscmp(name, ItemNames[i]) == 0) ||
+			(!caseSensitive && _wcsicmp(name, ItemNames[i]) == 0))
+		{
+			return i;
+		}
+	}
+	return INVALID_INDEX;
+}
+
+size_t EnumDesc::FindItemByValue(int32_t value) const
+{
+	if(ItemValues)
+	{
+		for(size_t i = 0; i < ItemCount; ++i)
+			if(value == ItemValues[i])
+				return i;
+		return INVALID_INDEX;
+	}
+	else
+	{
+		if(value < 0)
+			return INVALID_INDEX;
+		size_t index = (size_t)value;
+		if(index < ItemCount)
+			return index;
+		else
+			return INVALID_INDEX;
+	}
+}
+
+void EnumDesc::ValueToStr(std::wstring& out, int32_t value) const
+{
+	size_t index = FindItemByValue(value);
+	if(index != INVALID_INDEX)
+		out = ItemNames[index];
+	else
+		common::IntToStr(&out, value);
+}
+
+bool EnumDesc::StrToValue(int32_t& out, const wchar_t* str, bool caseSensitive, bool allowInteger) const
+{
+	size_t index = FindItemByName(str, caseSensitive);
+	if(index != INVALID_INDEX)
+	{
+		out = GetValue(index);
+		return true;
+	}
+	else
+	{
+		if(allowInteger)
+			return common::StrToInt(&out, str) == 0;
+		else
+			return false;
+	}
+}
+
+////////////////////////////////////////////////////////////////////////////////
 // class BoolParam
 
 bool BoolParam::GetConst() const
