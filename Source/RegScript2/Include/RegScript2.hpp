@@ -82,13 +82,9 @@ public:
 	{
 	}
 
-	using EnumDesc::ValueIsValid;
-	using EnumDesc::ValueToStr;
-	using EnumDesc::StrToValue;
-
-	bool ValueIsValid(Enum_t value) const { return ValueIsValid((int32_t)value); }
-	void ValueToStr(std::wstring& out, Enum_t value) const { ValueToStr(out, (int32_t)value); }
-	bool StrToValue(Enum_t& out, const wchar_t* str, bool caseSensitive, bool allowInteger) const { return StrToValue((int32_t&)out, str, caseSensitive, allowInteger); }
+	bool ValueIsValid(Enum_t value) const { return EnumDesc::ValueIsValid((int32_t)value); }
+	void ValueToStr(std::wstring& out, Enum_t value) const { EnumDesc::ValueToStr(out, (int32_t)value); }
+	bool StrToValue(Enum_t& out, const wchar_t* str, bool caseSensitive, bool allowInteger) const { return EnumDesc::StrToValue((int32_t&)out, str, caseSensitive, allowInteger); }
 };
 
 // Class is NOT polymorphic.

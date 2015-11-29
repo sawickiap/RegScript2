@@ -175,14 +175,14 @@ TEST(Utils, OldEnumWithoutValues)
 	EXPECT_EQ(1, g_OldEnumWithoutValuesDesc.FindItemByValue(1));
 	EXPECT_EQ(rs2::EnumDesc::INVALID_INDEX, g_OldEnumWithoutValuesDesc.FindItemByValue(666));
 
-	EXPECT_TRUE(g_OldEnumWithoutValuesDesc.ValueIsValid(2));
-	EXPECT_FALSE(g_OldEnumWithoutValuesDesc.ValueIsValid(666));
+	EXPECT_TRUE(g_OldEnumWithoutValuesDesc.ValueIsValid((OldEnumWithoutValues)2));
+	EXPECT_FALSE(g_OldEnumWithoutValuesDesc.ValueIsValid((OldEnumWithoutValues)666));
 
 	OldEnumWithoutValues val;
 	std::wstring str;
 	g_OldEnumWithoutValuesDesc.ValueToStr(str, OldEnumWithoutValues_Value2);
 	EXPECT_EQ(L"Value2", str);
-	g_OldEnumWithoutValuesDesc.ValueToStr(str, -666);
+	g_OldEnumWithoutValuesDesc.ValueToStr(str, (OldEnumWithoutValues)-666);
 	EXPECT_EQ(L"-666", str);
 
 	EXPECT_TRUE(g_OldEnumWithoutValuesDesc.StrToValue(val, L"Value1", true, false));
@@ -215,14 +215,14 @@ TEST(Utils, NewEnumWithValues)
 	EXPECT_EQ(2, g_NewEnumWithValuesDesc.FindItemByValue(10));
 	EXPECT_EQ(rs2::EnumDesc::INVALID_INDEX, g_NewEnumWithValuesDesc.FindItemByValue(666));
 
-	EXPECT_TRUE(g_NewEnumWithValuesDesc.ValueIsValid(10));
-	EXPECT_FALSE(g_NewEnumWithValuesDesc.ValueIsValid(666));
+	EXPECT_TRUE(g_NewEnumWithValuesDesc.ValueIsValid((NewEnumWithValues)10));
+	EXPECT_FALSE(g_NewEnumWithValuesDesc.ValueIsValid((NewEnumWithValues)666));
 
 	NewEnumWithValues val;
 	std::wstring str;
 	g_NewEnumWithValuesDesc.ValueToStr(str, NewEnumWithValues::PositiveValue);
 	EXPECT_EQ(L"PositiveValue", str);
-	g_NewEnumWithValuesDesc.ValueToStr(str, 666);
+	g_NewEnumWithValuesDesc.ValueToStr(str, (NewEnumWithValues)666);
 	EXPECT_EQ(L"666", str);
 
 	EXPECT_TRUE(g_NewEnumWithValuesDesc.StrToValue(val, L"PositiveValue", true, false));
