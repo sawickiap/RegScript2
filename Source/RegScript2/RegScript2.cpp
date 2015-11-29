@@ -31,6 +31,25 @@ void BoolParam::SetConst(bool value)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+// class IntParam
+
+int32_t IntParam::GetConst() const
+{
+	int32_t value;
+	if(TryGetConst(value))
+		return value;
+	else
+		throw common::Error(ERR_MSG_VALUE_NOT_CONST, __TFILE__, __LINE__);
+}
+
+void IntParam::SetConst(int32_t value)
+{
+	// TODO
+	m_ValueType = VALUE_TYPE::CONSTANT;
+	m_Value = value;
+}
+
+////////////////////////////////////////////////////////////////////////////////
 // class UintParam
 
 uint32_t UintParam::GetConst() const
@@ -393,6 +412,148 @@ bool BoolParamDesc::Parse(void* dstParam, const wchar_t* src) const
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+// class IntParamDesc
+
+size_t IntParamDesc::GetParamSize() const
+{
+	switch(GetStorage())
+	{
+	case STORAGE::RAW:
+		return sizeof(Value_t);
+	case STORAGE::PARAM:
+		return sizeof(Param_t);
+	default:
+		return 0;
+	}
+}
+
+bool IntParamDesc::IsConst(const void* param) const
+{
+	if(!CanRead())
+		return false;
+	switch(GetStorage())
+	{
+	case STORAGE::RAW:
+		return true;
+	case STORAGE::PARAM:
+		return AccessAsParam(param)->IsConst();
+	default:
+		assert(0);
+		return true;
+	}
+}
+
+bool IntParamDesc::TryGetConst(Value_t& outValue, const void* param) const
+{
+	if(!CanRead())
+		return false;
+	bool ok = false;
+	switch(GetStorage())
+	{
+	case STORAGE::RAW:
+		outValue = *AccessAsRaw(param);
+		ok = true;
+		break;
+	case STORAGE::PARAM:
+		ok = AccessAsParam(param)->TryGetConst(outValue);
+		break;
+	case STORAGE::FUNCTION:
+		ok = GetFunc(outValue, param);
+		break;
+	default:
+		assert(0);
+	}
+	if(ok && (Flags & FLAG_MINMAX_CLAMP_ON_GET))
+		ClampValueToMinMax(outValue);
+	return ok;
+}
+
+IntParamDesc::Value_t IntParamDesc::GetConst(const void* param) const
+{
+	Value_t value;
+	if(TryGetConst(value, param))
+		return value;
+	else
+		throw common::Error(ERR_MSG_VALUE_NOT_CONST, __TFILE__, __LINE__);
+}
+
+bool IntParamDesc::TrySetConst(void* param, Value_t value) const
+{
+	if(!CanWrite())
+		return false;
+	if((Flags & FLAG_MINMAX_FAIL_ON_SET) && !ValueInMinMax(value))
+		return false;
+	else if(Flags & FLAG_MINMAX_CLAMP_ON_SET)
+		ClampValueToMinMax(value);
+	switch(GetStorage())
+	{
+	case STORAGE::RAW:
+		*AccessAsRaw(param) = value;
+		break;
+	case STORAGE::PARAM:
+		AccessAsParam(param)->SetConst(value);
+		break;
+	case STORAGE::FUNCTION:
+		return SetFunc(param, value);
+		break;
+	default:
+		assert(0);
+	}
+	return true;
+}
+
+void IntParamDesc::SetConst(void* param, Value_t value) const
+{
+	if(!TrySetConst(param, value))
+		throw common::Error(ERR_MSG_CANNOT_SET_VALUE, __TFILE__, __LINE__);
+}
+
+void IntParamDesc::Copy(void* dstParam, const void* srcParam) const
+{
+	CheckCanRead();
+	CheckCanWrite();
+
+	switch(GetStorage())
+	{
+	case STORAGE::RAW:
+		*AccessAsRaw(dstParam) = *AccessAsRaw(srcParam);
+		break;
+	case STORAGE::PARAM:
+		*AccessAsParam(dstParam) = *AccessAsParam(srcParam);
+		break;
+	case STORAGE::FUNCTION:
+		SetConst(dstParam, GetConst(srcParam));
+		break;
+	default:
+		assert(0);
+	}
+}
+
+bool IntParamDesc::ToString(std::wstring& out, const void* srcParam) const
+{
+	Value_t value;
+	if(TryGetConst(value, srcParam))
+	{
+		common::IntToStr(&out, value);
+		return true;
+	}
+	else
+		return false;
+}
+
+bool IntParamDesc::Parse(void* dstParam, const wchar_t* src) const
+{
+	Value_t value;
+	if(common::StrToInt(&value, src) == 0)
+	{
+		SetConst(dstParam, value);
+		return true;
+	}
+	else
+		return false;
+}
+
+////////////////////////////////////////////////////////////////////////////////
 // class UintParamDesc
 
 size_t UintParamDesc::GetParamSize() const
@@ -667,18 +828,18 @@ bool FloatParamDesc::ToString(std::wstring& out, const void* srcParam) const
 		{
 			if(Flags & FLAG_FORMAT_PERCENT)
 			{
-				SthToStr<float>(&out, value * 100.f);
+				ValueToStr(out, value * 100.f);
 				out += L'%';
 				return true;
 			}
 			else if (Flags & FLAG_FORMAT_DB && value > 0.f)
 			{
-				SthToStr<float>(&out, PowerToDB(value));
+				ValueToStr(out, PowerToDB(value));
 				out += L"dB";
 				return true;
 			}
 		}
-		SthToStr<float>(&out, value);
+		ValueToStr(out, value);
 		return true;
 	}
 	else
@@ -720,6 +881,14 @@ bool FloatParamDesc::Parse(void* dstParam, const wchar_t* src) const
 		else
 			return false;
 	}
+}
+
+void FloatParamDesc::ValueToStr(std::wstring& out, float value) const
+{
+	if(Precision == UINT_MAX)
+		common::FloatToStr(&out, value, 'g');
+	else
+		common::FloatToStr(&out, value, 'f', (int)Precision);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

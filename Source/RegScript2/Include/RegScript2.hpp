@@ -79,6 +79,23 @@ private:
 	bool m_Value;
 };
 
+class IntParam : public Param
+{
+public:
+	IntParam() { }
+	IntParam(int32_t initialValue) : m_Value(initialValue) { }
+
+	bool IsConst() const { return true; } // TODO
+	bool TryGetConst(int32_t& outValue) const { outValue = m_Value; return true; } // TODO
+	int32_t GetConst() const;
+
+	void SetConst(int32_t value);
+	IntParam& operator=(int32_t value) { SetConst(value); return *this; }
+
+private:
+	int32_t m_Value;
+};
+
 class UintParam : public Param
 {
 public:
@@ -342,6 +359,70 @@ public:
 	virtual bool Parse(void* dstParam, const wchar_t* src) const;
 };
 
+class IntParamDesc : public TypedParamDesc<int32_t>
+{
+public:
+	typedef IntParam Param_t;
+	typedef int32_t Value_t;
+	typedef std::function<bool(Value_t&, const void*)> GetFunc_t;
+	typedef std::function<bool(void*, Value_t)> SetFunc_t;
+
+	GetFunc_t GetFunc;
+	SetFunc_t SetFunc;
+
+	Value_t MinValue, MaxValue;
+
+	IntParamDesc(
+		STORAGE storage,
+		Value_t defaultValue = Value_t(),
+		uint32_t flags = 0) :
+		TypedParamDesc<int32_t>(storage, defaultValue, flags),
+		MinValue(INT_MIN),
+		MaxValue(INT_MAX)
+	{
+	}
+	IntParamDesc(
+		StorageFunction& storageFunction,
+		GetFunc_t getFunc,
+		SetFunc_t setFunc,
+		Value_t defaultValue = Value_t(),
+		uint32_t flags = 0) :
+		TypedParamDesc<int32_t>(STORAGE::FUNCTION, defaultValue, flags),
+		GetFunc(getFunc),
+		SetFunc(setFunc),
+		MinValue(INT_MIN),
+		MaxValue(INT_MAX)
+	{
+	}
+
+	IntParamDesc& SetDefault(Value_t defaultValue) { DefaultValue = defaultValue; return *this; }
+	IntParamDesc& SetMin(Value_t minValue) { MinValue = minValue; return *this; }
+	IntParamDesc& SetMax(Value_t maxValue) { MaxValue = maxValue; return *this; }
+
+	virtual size_t GetParamSize() const;
+
+	bool ValueInMinMax(Value_t value) const { return value <= MaxValue && value >= MinValue; }
+	void ClampValueToMinMax(Value_t& value) const { if(value < MinValue) value = MinValue; else if(value > MaxValue) value = MaxValue; }
+
+	Value_t* AccessAsRaw(void* param) const { assert(GetStorage() == STORAGE::RAW); return (Value_t*)param; }
+	const Value_t* AccessAsRaw(const void* param) const { assert(GetStorage() == STORAGE::RAW); return (const Value_t*)param; }
+	Param_t* AccessAsParam(void* param) const { assert(GetStorage() == STORAGE::PARAM); Param_t* result = (Param_t*)param; result->CheckMagicNumber(); return result; }
+	const Param_t* AccessAsParam(const void* param) const { assert(GetStorage() == STORAGE::PARAM); const Param_t* result = (const Param_t*)param; result->CheckMagicNumber(); return result; }
+
+	virtual bool CanWrite() const { if(GetStorage() == STORAGE::FUNCTION && !SetFunc) return false; return !(Flags & FLAG_READ_ONLY); }
+	virtual bool CanRead() const { if(GetStorage() == STORAGE::FUNCTION && !GetFunc) return false; return !(Flags & FLAG_WRITE_ONLY); }
+	virtual bool IsConst(const void* param) const;
+	bool TryGetConst(Value_t& outValue, const void* param) const;
+	Value_t GetConst(const void* param) const;
+	bool TrySetConst(void* param, Value_t value) const;
+	void SetConst(void* param, Value_t value) const;
+
+	virtual void SetToDefault(void* param) const { SetConst(param, DefaultValue); }
+	virtual void Copy(void* dstParam, const void* srcParam) const;
+	virtual bool ToString(std::wstring& out, const void* srcParam) const;
+	virtual bool Parse(void* dstParam, const wchar_t* src) const;
+};
+
 class UintParamDesc : public TypedParamDesc<uint32_t>
 {
 public:
@@ -432,6 +513,8 @@ public:
 
 	// When min-max values are active, non-finite values are also not accepted.
 	Value_t MinValue, MaxValue, Step;
+	// UINT_MAX means general format should be used.
+	uint32_t Precision;
 
 	FloatParamDesc(
 		STORAGE storage,
@@ -440,7 +523,8 @@ public:
 		TypedParamDesc<float>(storage, defaultValue, flags),
 		MinValue(-FLT_MAX),
 		MaxValue(FLT_MAX),
-		Step(1.f)
+		Step(1.f),
+		Precision(UINT_MAX)
 	{
 	}
 	FloatParamDesc(
@@ -454,7 +538,8 @@ public:
 		SetFunc(setFunc),
 		MinValue(-FLT_MAX),
 		MaxValue(FLT_MAX),
-		Step(1.f)
+		Step(1.f),
+		Precision(UINT_MAX)
 	{
 	}
 
@@ -464,6 +549,7 @@ public:
 	FloatParamDesc& SetMin(Value_t minValue) { MinValue = minValue; return *this; }
 	FloatParamDesc& SetMax(Value_t maxValue) { MaxValue = maxValue; return *this; }
 	FloatParamDesc& SetStep(Value_t step) { Step = step; return *this; }
+	FloatParamDesc& SetPrecision(uint32_t precision) { Precision = precision; return *this; }
 
 	bool ValueInMinMax(Value_t value) const { return value <= MaxValue && value >= MinValue; }
 	void ClampValueToMinMax(Value_t& value) const { if(!(value >= MinValue)) value = MinValue; else if(!(value <= MaxValue)) value = MaxValue; }
@@ -486,6 +572,9 @@ public:
 	virtual void Copy(void* dstParam, const void* srcParam) const;
 	virtual bool ToString(std::wstring& out, const void* srcParam) const;
 	virtual bool Parse(void* dstParam, const wchar_t* src) const;
+
+private:
+	void ValueToStr(std::wstring& out, float value) const;
 };
 
 class StringParamDesc : public TypedParamDesc<std::wstring>
@@ -778,6 +867,11 @@ inline size_t FixedSizeArrayParamDesc::GetParamSize() const
 		L#paramName, \
 		offsetof(Struct_t, paramName), \
 		new rs2::BoolParamDesc(storage, __VA_ARGS__)))
+#define RS2_ADD_PARAM_INT(paramName, storage, ...) \
+	(structDesc->AddParam( \
+		L#paramName, \
+		offsetof(Struct_t, paramName), \
+		new rs2::IntParamDesc(storage, __VA_ARGS__)))
 #define RS2_ADD_PARAM_UINT(paramName, storage, ...) \
 	(structDesc->AddParam( \
 		L#paramName, \
@@ -825,6 +919,11 @@ inline size_t FixedSizeArrayParamDesc::GetParamSize() const
 		L#paramName, \
 		0, \
 		new rs2::BoolParamDesc(RegScript2::storageFunction, getFunc, setFunc, __VA_ARGS__)))
+#define RS2_ADD_PARAM_INT_FUNCTION(paramName, getFunc, setFunc, ...) \
+	(structDesc->AddParam( \
+		L#paramName, \
+		0, \
+		new rs2::IntParamDesc(RegScript2::storageFunction, getFunc, setFunc, __VA_ARGS__)))
 #define RS2_ADD_PARAM_UINT_FUNCTION(paramName, getFunc, setFunc, ...) \
 	(structDesc->AddParam( \
 		L#paramName, \

@@ -80,6 +80,7 @@ static void DebugPrintFixedSizeArrayParam(
 void DebugPrintParam(IPrinter& printer, const void* srcParam, const wchar_t* paramName, const ParamDesc& paramDesc, uint32_t indentLevel)
 {
 	if(typeid(BoolParamDesc) == typeid(paramDesc) ||
+		typeid(IntParamDesc) == typeid(paramDesc) ||
 		typeid(UintParamDesc) == typeid(paramDesc) ||
 		typeid(FloatParamDesc) == typeid(paramDesc) ||
 		typeid(StringParamDesc) == typeid(paramDesc) ||

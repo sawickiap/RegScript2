@@ -31,6 +31,7 @@ struct STokDocLoadConfig
 };
 
 void SaveParamToTokDoc(common::tokdoc::Node& dstNode, const void* srcParam, const BoolParamDesc& paramDesc);
+void SaveParamToTokDoc(common::tokdoc::Node& dstNode, const void* srcParam, const IntParamDesc& paramDesc);
 void SaveParamToTokDoc(common::tokdoc::Node& dstNode, const void* srcParam, const UintParamDesc& paramDesc);
 void SaveParamToTokDoc(common::tokdoc::Node& dstNode, const void* srcParam, const FloatParamDesc& paramDesc);
 void SaveParamToTokDoc(common::tokdoc::Node& dstNode, const void* srcParam, const StringParamDesc& paramDesc);
@@ -47,6 +48,7 @@ void SaveParamToTokDoc(common::tokdoc::Node& dstNode, const void* srcParam, cons
 void SaveObjToTokDoc(common::tokdoc::Node& dstNode, const void* srcObj, const StructDesc& structDesc);
 
 bool LoadParamFromTokDoc(void* dstParam, const BoolParamDesc& paramDesc, const common::tokdoc::Node& srcNode, const STokDocLoadConfig& config);
+bool LoadParamFromTokDoc(void* dstParam, const IntParamDesc& paramDesc, const common::tokdoc::Node& srcNode, const STokDocLoadConfig& config);
 bool LoadParamFromTokDoc(void* dstParam, const UintParamDesc& paramDesc, const common::tokdoc::Node& srcNode, const STokDocLoadConfig& config);
 bool LoadParamFromTokDoc(void* dstParam, const FloatParamDesc& paramDesc, const common::tokdoc::Node& srcNode, const STokDocLoadConfig& config);
 bool LoadParamFromTokDoc(void* dstParam, const StringParamDesc& paramDesc, const common::tokdoc::Node& srcNode, const STokDocLoadConfig& config);

@@ -15,6 +15,12 @@ void SaveParamToTokDoc(common::tokdoc::Node& dstNode, const void* srcParam, cons
 	common::tokdoc::NodeFrom(dstNode, value);
 }
 
+void SaveParamToTokDoc(common::tokdoc::Node& dstNode, const void* srcParam, const IntParamDesc& paramDesc)
+{
+	int32_t value = paramDesc.GetConst(srcParam);
+	common::tokdoc::NodeFrom(dstNode, value);
+}
+
 void SaveParamToTokDoc(common::tokdoc::Node& dstNode, const void* srcParam, const FloatParamDesc& paramDesc)
 {
 	float value = paramDesc.GetConst(srcParam);
@@ -82,6 +88,8 @@ void SaveParamToTokDoc(common::tokdoc::Node& dstNode, const void* srcParam, cons
 {
 	if(typeid(BoolParamDesc) == typeid(paramDesc))
 		return SaveParamToTokDoc(dstNode, srcParam, (const BoolParamDesc&)paramDesc);
+	if(typeid(IntParamDesc) == typeid(paramDesc))
+		return SaveParamToTokDoc(dstNode, srcParam, (const IntParamDesc&)paramDesc);
 	if(typeid(UintParamDesc) == typeid(paramDesc))
 		return SaveParamToTokDoc(dstNode, srcParam, (const UintParamDesc&)paramDesc);
 	if(typeid(FloatParamDesc) == typeid(paramDesc))
@@ -146,6 +154,24 @@ bool LoadParamFromTokDoc(void* dstParam, const BoolParamDesc& paramDesc, const c
 			paramDesc.SetToDefault(dstParam);
 		if(config.WarningPrinter)
 			config.WarningPrinter->printf(L"Invalid bool value.");
+		return false;
+	}
+}
+
+bool LoadParamFromTokDoc(void* dstParam, const IntParamDesc& paramDesc, const common::tokdoc::Node& srcNode, const STokDocLoadConfig& config)
+{
+	int32_t value;
+	if(common::tokdoc::NodeTo(value, srcNode, IsFlagRequired(config.Flags)))
+	{
+		paramDesc.SetConst(dstParam, value);
+		return true;
+	}
+	else
+	{
+		if((config.Flags & TOKDOC_FLAG_DEFAULT))
+			paramDesc.SetToDefault(dstParam);
+		if(config.WarningPrinter)
+			config.WarningPrinter->printf(L"Invalid int value.");
 		return false;
 	}
 }
@@ -330,6 +356,8 @@ bool LoadParamFromTokDoc(void* dstParam, const ParamDesc& paramDesc, const commo
 {
 	if(typeid(BoolParamDesc) == typeid(paramDesc))
 		return LoadParamFromTokDoc(dstParam, (const BoolParamDesc&)paramDesc, srcNode, config);
+	if(typeid(IntParamDesc) == typeid(paramDesc))
+		return LoadParamFromTokDoc(dstParam, (const IntParamDesc&)paramDesc, srcNode, config);
 	if(typeid(UintParamDesc) == typeid(paramDesc))
 		return LoadParamFromTokDoc(dstParam, (const UintParamDesc&)paramDesc, srcNode, config);
 	if(typeid(FloatParamDesc) == typeid(paramDesc))
