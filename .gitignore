@@ -14,3 +14,5 @@ Source/Test/x64/Release/*
 Source/ipch/*
 Source/RegScript2.opensdf
 Source/RegScript2.sdf
+Source/RegScript2.VC.db
+Source/RegScript2.VC.VC.opendb
