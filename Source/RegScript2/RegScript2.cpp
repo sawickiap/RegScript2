@@ -151,6 +151,25 @@ void UintParam::SetConst(uint32_t value)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+// class EnumParam
+
+int32_t EnumParam::GetConst() const
+{
+	int32_t value;
+	if(TryGetConst(value))
+		return value;
+	else
+		throw common::Error(ERR_MSG_VALUE_NOT_CONST, __TFILE__, __LINE__);
+}
+
+void EnumParam::SetConst(int32_t value)
+{
+	// TODO
+	m_ValueType = VALUE_TYPE::CONSTANT;
+	m_Value = value;
+}
+
+////////////////////////////////////////////////////////////////////////////////
 // class FloatParam
 
 float FloatParam::GetConst() const
@@ -775,6 +794,144 @@ bool UintParamDesc::Parse(void* dstParam, const wchar_t* src) const
 {
 	Value_t value;
 	if(StrToUint_AutoBase<Value_t>(value, src))
+	{
+		SetConst(dstParam, value);
+		return true;
+	}
+	else
+		return false;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// class EnumParamDesc
+
+size_t EnumParamDesc::GetParamSize() const
+{
+	switch(GetStorage())
+	{
+	case STORAGE::RAW:
+		return sizeof(Value_t);
+	case STORAGE::PARAM:
+		return sizeof(Param_t);
+	default:
+		return 0;
+	}
+}
+
+bool EnumParamDesc::IsConst(const void* param) const
+{
+	if(!CanRead())
+		return false;
+	switch(GetStorage())
+	{
+	case STORAGE::RAW:
+		return true;
+	case STORAGE::PARAM:
+		return AccessAsParam(param)->IsConst();
+	default:
+		assert(0);
+		return true;
+	}
+}
+
+bool EnumParamDesc::TryGetConst(Value_t& outValue, const void* param) const
+{
+	if(!CanRead())
+		return false;
+	bool ok = false;
+	switch(GetStorage())
+	{
+	case STORAGE::RAW:
+		outValue = *AccessAsRaw(param);
+		ok = true;
+		break;
+	case STORAGE::PARAM:
+		ok = AccessAsParam(param)->TryGetConst(outValue);
+		break;
+	case STORAGE::FUNCTION:
+		ok = GetFunc(outValue, param);
+		break;
+	default:
+		assert(0);
+	}
+	return ok;
+}
+
+EnumParamDesc::Value_t EnumParamDesc::GetConst(const void* param) const
+{
+	Value_t value;
+	if(TryGetConst(value, param))
+		return value;
+	else
+		throw common::Error(ERR_MSG_VALUE_NOT_CONST, __TFILE__, __LINE__);
+}
+
+bool EnumParamDesc::TrySetConst(void* param, Value_t value) const
+{
+	if(!CanWrite())
+		return false;
+	if((Flags & FLAG_MINMAX_FAIL_ON_SET) && m_EnumDesc->ValueIsValid(value))
+		return false;
+	switch(GetStorage())
+	{
+	case STORAGE::RAW:
+		*AccessAsRaw(param) = value;
+		break;
+	case STORAGE::PARAM:
+		AccessAsParam(param)->SetConst(value);
+		break;
+	case STORAGE::FUNCTION:
+		return SetFunc(param, value);
+		break;
+	default:
+		assert(0);
+	}
+	return true;
+}
+
+void EnumParamDesc::SetConst(void* param, Value_t value) const
+{
+	if(!TrySetConst(param, value))
+		throw common::Error(ERR_MSG_CANNOT_SET_VALUE, __TFILE__, __LINE__);
+}
+
+void EnumParamDesc::Copy(void* dstParam, const void* srcParam) const
+{
+	CheckCanRead();
+	CheckCanWrite();
+
+	switch(GetStorage())
+	{
+	case STORAGE::RAW:
+		*AccessAsRaw(dstParam) = *AccessAsRaw(srcParam);
+		break;
+	case STORAGE::PARAM:
+		*AccessAsParam(dstParam) = *AccessAsParam(srcParam);
+		break;
+	case STORAGE::FUNCTION:
+		SetConst(dstParam, GetConst(srcParam));
+		break;
+	default:
+		assert(0);
+	}
+}
+
+bool EnumParamDesc::ToString(std::wstring& out, const void* srcParam) const
+{
+	Value_t value;
+	if(TryGetConst(value, srcParam))
+	{
+		m_EnumDesc->ValueToStr(out, value);
+		return true;
+	}
+	else
+		return false;
+}
+
+bool EnumParamDesc::Parse(void* dstParam, const wchar_t* src) const
+{
+	Value_t value;
+	if(m_EnumDesc->StrToValue(value, src, true, !(Flags & FLAG_MINMAX_FAIL_ON_SET)))
 	{
 		SetConst(dstParam, value);
 		return true;

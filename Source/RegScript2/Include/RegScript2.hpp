@@ -178,6 +178,39 @@ private:
 	uint32_t m_Value;
 };
 
+class EnumParam : public Param
+{
+public:
+	EnumParam() { }
+	EnumParam(int32_t initialValue) : m_Value(initialValue) { }
+
+	bool IsConst() const { return true; } // TODO
+	bool TryGetConst(int32_t& outValue) const { outValue = m_Value; return true; } // TODO
+	int32_t GetConst() const;
+
+	void SetConst(int32_t value);
+	EnumParam& operator=(int32_t value) { SetConst(value); return *this; }
+
+private:
+	int32_t m_Value;
+};
+
+template<typename Enum_t>
+class TypedEnumParam : public EnumParam
+{
+	static_assert(sizeof(Enum_t) == sizeof(int32_t), "Enum type has size different than int32_t.");
+
+public:
+	TypedEnumParam() { }
+	TypedEnumParam(Enum_t initialValue) : EnumParam((int32_t)initialValue) { }
+
+	bool TryGetConst(Enum_t& outValue) const { return EnumParam::TryGetConst((int32_t&)outValue); }
+	Enum_t GetConst() const { return (Enum_t)EnumParam::GetConst(); }
+
+	void SetConst(Enum_t value) { EnumParam::SetConst((int32_t)value); }
+	EnumParam& operator=(int32_t value) { SetConst(value); return *this; }
+};
+
 class FloatParam : public Param
 {
 public:
@@ -538,6 +571,72 @@ public:
 
 	bool ValueInMinMax(Value_t value) const { return value <= MaxValue && value >= MinValue; }
 	void ClampValueToMinMax(Value_t& value) const { if(value < MinValue) value = MinValue; else if(value > MaxValue) value = MaxValue; }
+
+	Value_t* AccessAsRaw(void* param) const { assert(GetStorage() == STORAGE::RAW); return (Value_t*)param; }
+	const Value_t* AccessAsRaw(const void* param) const { assert(GetStorage() == STORAGE::RAW); return (const Value_t*)param; }
+	Param_t* AccessAsParam(void* param) const { assert(GetStorage() == STORAGE::PARAM); Param_t* result = (Param_t*)param; result->CheckMagicNumber(); return result; }
+	const Param_t* AccessAsParam(const void* param) const { assert(GetStorage() == STORAGE::PARAM); const Param_t* result = (const Param_t*)param; result->CheckMagicNumber(); return result; }
+
+	virtual bool CanWrite() const { if(GetStorage() == STORAGE::FUNCTION && !SetFunc) return false; return !(Flags & FLAG_READ_ONLY); }
+	virtual bool CanRead() const { if(GetStorage() == STORAGE::FUNCTION && !GetFunc) return false; return !(Flags & FLAG_WRITE_ONLY); }
+	virtual bool IsConst(const void* param) const;
+	bool TryGetConst(Value_t& outValue, const void* param) const;
+	Value_t GetConst(const void* param) const;
+	bool TrySetConst(void* param, Value_t value) const;
+	void SetConst(void* param, Value_t value) const;
+
+	virtual void SetToDefault(void* param) const { SetConst(param, DefaultValue); }
+	virtual void Copy(void* dstParam, const void* srcParam) const;
+	virtual bool ToString(std::wstring& out, const void* srcParam) const;
+	virtual bool Parse(void* dstParam, const wchar_t* src) const;
+};
+
+class EnumParamDesc : public TypedParamDesc<int32_t>
+{
+public:
+	typedef EnumParam Param_t;
+	typedef int32_t Value_t;
+	typedef std::function<bool(Value_t&, const void*)> GetFunc_t;
+	typedef std::function<bool(void*, Value_t)> SetFunc_t;
+
+	const EnumDesc* m_EnumDesc;
+	GetFunc_t GetFunc;
+	SetFunc_t SetFunc;
+
+	/*
+	FLAG_MINMAX_FAIL_ON_SET works with this type.
+	If value is not in item list, fails to set.
+	It also disallows integer numbers when parsing from string.
+	*/
+
+	EnumParamDesc(
+		STORAGE storage,
+		const EnumDesc* enumDesc,
+		Value_t defaultValue = Value_t(),
+		uint32_t flags = 0) :
+		TypedParamDesc<int32_t>(storage, defaultValue, flags),
+		m_EnumDesc(enumDesc)
+	{
+		assert(enumDesc);
+	}
+	EnumParamDesc(
+		StorageFunction& storageFunction,
+		const EnumDesc* enumDesc,
+		GetFunc_t getFunc,
+		SetFunc_t setFunc,
+		Value_t defaultValue = Value_t(),
+		uint32_t flags = 0) :
+		TypedParamDesc<int32_t>(STORAGE::FUNCTION, defaultValue, flags),
+		m_EnumDesc(enumDesc),
+		GetFunc(getFunc),
+		SetFunc(setFunc)
+	{
+		assert(enumDesc);
+	}
+
+	EnumParamDesc& SetDefault(Value_t defaultValue) { DefaultValue = defaultValue; return *this; }
+
+	virtual size_t GetParamSize() const;
 
 	Value_t* AccessAsRaw(void* param) const { assert(GetStorage() == STORAGE::RAW); return (Value_t*)param; }
 	const Value_t* AccessAsRaw(const void* param) const { assert(GetStorage() == STORAGE::RAW); return (const Value_t*)param; }
