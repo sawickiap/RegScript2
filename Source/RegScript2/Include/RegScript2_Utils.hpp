@@ -19,11 +19,16 @@ public:
 
 } // namespace RegScript2
 
+void Format(std::string& str, const char* format, ...);
 void Format(std::wstring& str, const wchar_t* format, ...);
+void VFormat(std::string& str, const char* format, va_list argList);
 void VFormat(std::wstring& str, const wchar_t* format, va_list argList);
+string Format_r(const char* format, ...);
 wstring Format_r(const wchar_t* format, ...);
 
+void AppendFormat(std::string& str, const char* format, ...);
 void AppendFormat(std::wstring& str, const wchar_t* format, ...);
+void AppendVFormat(std::string& str, const char* format, va_list argList);
 void AppendVFormat(std::wstring& str, const wchar_t* format, va_list argList);
 
 // Returns textual representation of time duration, e.g. "12.5 ms" or "1:05:02".
