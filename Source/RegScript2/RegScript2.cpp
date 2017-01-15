@@ -1652,9 +1652,19 @@ bool FindObjParamByPath(
 			wstring paramName = endIndex == wstring::npos ?
 				pathStr.substr(pathIndex) :
 				pathStr.substr(pathIndex, endIndex);
-			size_t paramIndex = currStructDesc->Find(paramName.c_str(), caseSensitive);
-			if(paramIndex == (size_t)-1)
-				return false;
+            size_t paramIndex;
+            for(;;)
+            {
+			    paramIndex = currStructDesc->Find(paramName.c_str(), caseSensitive);
+			    if(paramIndex != (size_t)-1)
+                    break;
+                else
+                {
+                    currStructDesc = currStructDesc->GetBaseStructDesc();
+                    if(currStructDesc == nullptr)
+				        return false;
+                }
+            }
 			outParamDesc = currStructDesc->GetParamDesc(paramIndex);
 			outParam = currStructDesc->AccessRawParam(currObj, paramIndex);
 			currObj = nullptr;
