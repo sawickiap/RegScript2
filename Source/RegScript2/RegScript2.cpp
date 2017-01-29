@@ -1077,6 +1077,12 @@ bool FloatParamDesc::ToString(std::wstring& out, const void* srcParam) const
 				out += L"dB";
 				return true;
 			}
+            else if(Flags & FLAG_FORMAT_DEG)
+            {
+                ValueToStr(out, common::RadToDeg(value));
+                out += L"deg";
+                return true;
+            }
 		}
 		ValueToStr(out, value);
 		return true;
@@ -1110,6 +1116,17 @@ bool FloatParamDesc::Parse(void* dstParam, const wchar_t* src) const
 		else
 			return false;
 	}
+    else if(common::StrEnds(src, L"deg", false))
+    {
+        wstring newStr(src, src + wcslen(src) - 3);
+        if(StrToSth<float>(&value, newStr))
+        {
+            SetConst(dstParam, common::DegToRad(value));
+            return true;
+        }
+        else
+            return false;
+    }
 	else
 	{
 		if(StrToSth<float>(&value, src))
