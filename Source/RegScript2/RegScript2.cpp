@@ -504,10 +504,7 @@ bool BoolParamDesc::Parse(void* dstParam, const wchar_t* src) const
 {
 	Value_t value;
 	if(StrToSth<bool>(&value, src))
-	{
-		SetConst(dstParam, value);
-		return true;
-	}
+		return TrySetConst(dstParam, value);
 	else
 		return false;
 }
@@ -646,10 +643,7 @@ bool IntParamDesc::Parse(void* dstParam, const wchar_t* src) const
 {
 	Value_t value;
 	if(common::StrToInt(&value, src) == 0)
-	{
-		SetConst(dstParam, value);
-		return true;
-	}
+		return TrySetConst(dstParam, value);
 	else
 		return false;
 }
@@ -794,10 +788,7 @@ bool UintParamDesc::Parse(void* dstParam, const wchar_t* src) const
 {
 	Value_t value;
 	if(StrToUint_AutoBase<Value_t>(value, src))
-	{
-		SetConst(dstParam, value);
-		return true;
-	}
+		return TrySetConst(dstParam, value);
 	else
 		return false;
 }
@@ -932,10 +923,7 @@ bool EnumParamDesc::Parse(void* dstParam, const wchar_t* src) const
 {
 	Value_t value;
 	if(m_EnumDesc->StrToValue(value, src, true, !(Flags & FLAG_MINMAX_FAIL_ON_SET)))
-	{
-		SetConst(dstParam, value);
-		return true;
-	}
+		return TrySetConst(dstParam, value);
 	else
 		return false;
 }
@@ -1098,10 +1086,7 @@ bool FloatParamDesc::Parse(void* dstParam, const wchar_t* src) const
 	{
 		wstring newStr { src, src + wcslen(src) - 1 };
 		if(StrToSth<float>(&value, newStr))
-		{
-			SetConst(dstParam, value * 0.01f);
-			return true;
-		}
+			return TrySetConst(dstParam, value * 0.01f);
 		else
 			return false;
 	}
@@ -1109,10 +1094,7 @@ bool FloatParamDesc::Parse(void* dstParam, const wchar_t* src) const
 	{
 		wstring newStr(src, src + wcslen(src) - 2);
 		if(StrToSth<float>(&value, newStr))
-		{
-			SetConst(dstParam, DBToPower(value));
-			return true;
-		}
+			return TrySetConst(dstParam, DBToPower(value));
 		else
 			return false;
 	}
@@ -1120,20 +1102,14 @@ bool FloatParamDesc::Parse(void* dstParam, const wchar_t* src) const
     {
         wstring newStr(src, src + wcslen(src) - 3);
         if(StrToSth<float>(&value, newStr))
-        {
-            SetConst(dstParam, common::DegToRad(value));
-            return true;
-        }
+            return TrySetConst(dstParam, common::DegToRad(value));
         else
             return false;
     }
 	else
 	{
 		if(StrToSth<float>(&value, src))
-		{
-			SetConst(dstParam, value);
-			return true;
-		}
+			return TrySetConst(dstParam, value);
 		else
 			return false;
 	}
@@ -1263,8 +1239,7 @@ bool StringParamDesc::ToString(std::wstring& out, const void* srcParam) const
 
 bool StringParamDesc::Parse(void* dstParam, const wchar_t* src) const
 {
-	SetConst(dstParam, src);
-	return true;
+	return TrySetConst(dstParam, src);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1400,10 +1375,7 @@ bool GameTimeParamDesc::Parse(void* dstParam, const wchar_t* src) const
 {
 	Value_t value;
 	if(FriendlyStrToGameTime(value, src))
-	{
-		SetConst(dstParam, value);
-		return true;
-	}
+		return TrySetConst(dstParam, value);
 	else
 		return false;
 }
@@ -1570,10 +1542,7 @@ bool VecParamDesc<Vec_t>::Parse(void* dstParam, const wchar_t* src) const
 {
 	Value_t value;
 	if(StrToSth<Value_t>(&value, src))
-	{
-		SetConst(dstParam, value);
-		return true;
-	}
+		return TrySetConst(dstParam, value);
 	else
 		return false;
 }
