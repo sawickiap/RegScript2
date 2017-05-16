@@ -673,6 +673,7 @@ public:
 	{
 		FLAG_FORMAT_PERCENT = 0x20000, // Doesn't limit range to 0..1.
 		FLAG_FORMAT_DB      = 0x40000, // Value must be positive. Otherwise NORMAL is used.
+        FLAG_FORMAT_DEG     = 0x80000, // Value is angle in radians, but is displayed in degrees.
 	};
 
 	// When min-max values are active, non-finite values are also not accepted.

@@ -8,6 +8,14 @@ namespace RegScript2
 
 } // namespace RegScript2
 
+void Format(std::string& str, const char* format, ...)
+{
+    va_list argList;
+    va_start(argList, format);
+    VFormat(str, format, argList);
+    va_end(argList);
+}
+
 void Format(std::wstring& str, const wchar_t* format, ...)
 {
 	va_list argList;
@@ -16,23 +24,37 @@ void Format(std::wstring& str, const wchar_t* format, ...)
 	va_end(argList);
 }
 
-void VFormat(std::wstring& str, const wchar_t* format, va_list argList)
+void VFormat(std::string& str, const char* format, va_list argList)
 {
-	size_t dstLen = (size_t)_vscwprintf(format, argList);
+	size_t dstLen = (size_t)_vscprintf(format, argList);
 
 	if(dstLen)
 	{
-		std::vector<wchar_t> buf(dstLen + 1);
-		vswprintf_s(&buf[0], dstLen + 1, format, argList);
+		std::vector<char> buf(dstLen + 1);
+		vsprintf_s(&buf[0], dstLen + 1, format, argList);
 		str.assign(&buf[0], &buf[dstLen]);
 	}
 	else
 		str.clear();
 }
 
-wstring Format_r(const wchar_t* format, ...)
+void VFormat(std::wstring& str, const wchar_t* format, va_list argList)
 {
-	wstring result;
+    size_t dstLen = (size_t)_vscwprintf(format, argList);
+
+    if(dstLen)
+    {
+        std::vector<wchar_t> buf(dstLen + 1);
+        vswprintf_s(&buf[0], dstLen + 1, format, argList);
+        str.assign(&buf[0], &buf[dstLen]);
+    }
+    else
+        str.clear();
+}
+
+string Format_r(const char* format, ...)
+{
+	string result;
 
 	va_list argList;
 	va_start(argList, format);
@@ -42,7 +64,19 @@ wstring Format_r(const wchar_t* format, ...)
 	return result;
 }
 
-void AppendFormat(std::wstring& str, const wchar_t* format, ...)
+wstring Format_r(const wchar_t* format, ...)
+{
+    wstring result;
+
+    va_list argList;
+    va_start(argList, format);
+    VFormat(result, format, argList);
+    va_end(argList);
+
+    return result;
+}
+
+void AppendFormat(std::string& str, const char* format, ...)
 {
 	va_list argList;
 	va_start(argList, format);
@@ -50,16 +84,36 @@ void AppendFormat(std::wstring& str, const wchar_t* format, ...)
 	va_end(argList);
 }
 
-void AppendVFormat(std::wstring& str, const wchar_t* format, va_list argList)
+void AppendFormat(std::wstring& str, const wchar_t* format, ...)
 {
-	size_t dstLen = (size_t)_vscwprintf(format, argList);
+    va_list argList;
+    va_start(argList, format);
+    AppendVFormat(str, format, argList);
+    va_end(argList);
+}
+
+void AppendVFormat(std::string& str, const char* format, va_list argList)
+{
+	size_t dstLen = (size_t)_vscprintf(format, argList);
 
 	if(dstLen)
 	{
-		std::vector<wchar_t> buf(dstLen + 1);
-		vswprintf_s(&buf[0], dstLen + 1, format, argList);
+		std::vector<char> buf(dstLen + 1);
+		vsprintf_s(&buf[0], dstLen + 1, format, argList);
 		str.append(&buf[0], &buf[dstLen]);
 	}
+}
+
+void AppendVFormat(std::wstring& str, const wchar_t* format, va_list argList)
+{
+    size_t dstLen = (size_t)_vscwprintf(format, argList);
+
+    if(dstLen)
+    {
+        std::vector<wchar_t> buf(dstLen + 1);
+        vswprintf_s(&buf[0], dstLen + 1, format, argList);
+        str.append(&buf[0], &buf[dstLen]);
+    }
 }
 
 void SecondsToFriendlyStr(std::wstring& out, double seconds)
