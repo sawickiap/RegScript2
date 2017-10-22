@@ -197,6 +197,19 @@ void StringParam::GetConst(std::wstring& outValue) const
 		throw common::Error(ERR_MSG_VALUE_NOT_CONST, __TFILE__, __LINE__);
 }
 
+const std::wstring* StringParam::AccessConst() const
+{
+    assert(IsConst());
+    return &m_Value;
+}
+
+void StringParam::SetConst(const wchar_t* value, size_t valueLen)
+{
+	// TODO
+	m_ValueType = VALUE_TYPE::CONSTANT;
+	m_Value.assign(value, value + valueLen);
+}
+
 void StringParam::SetConst(const wchar_t* value)
 {
 	// TODO
@@ -264,7 +277,10 @@ void StructDesc::SetObjToDefault(void* obj) const
 	if(m_BaseStructDesc)
 		m_BaseStructDesc->SetObjToDefault(obj);
 	for(size_t i = 0, count = Params.size(); i < count; ++i)
-		SetParamToDefault(obj, i);
+    {
+        if(Params[i]->CanWrite())
+		    SetParamToDefault(obj, i);
+    }
 }
 
 void StructDesc::CopyObj(void* dstObj, const void* srcObj) const
@@ -1180,20 +1196,35 @@ void StringParamDesc::GetConst(StringParamDesc::Value_t& outValue, const void* p
 		throw common::Error(ERR_MSG_VALUE_NOT_CONST, __TFILE__, __LINE__);
 }
 
-bool StringParamDesc::TrySetConst(void* param, const wchar_t* value) const
+const StringParamDesc::Value_t* StringParamDesc::AccessConst(const void* param) const
+{
+	switch(GetStorage())
+	{
+	case STORAGE::RAW:
+		return AccessAsRaw(param);
+	case STORAGE::PARAM:
+		return AccessAsParam(param)->AccessConst();
+	case STORAGE::FUNCTION:
+	default:
+		assert(0);
+		return nullptr;
+	}
+}
+
+bool StringParamDesc::TrySetConst(void* param, const wchar_t* value, size_t valueLen) const
 {
 	if(!CanWrite())
 		return false;
 	switch(GetStorage())
 	{
 	case STORAGE::RAW:
-		*AccessAsRaw(param) = value;
+		AccessAsRaw(param)->assign(value, value + valueLen);
 		break;
 	case STORAGE::PARAM:
-		AccessAsParam(param)->SetConst(value);
+		AccessAsParam(param)->SetConst(value, valueLen);
 		break;
 	case STORAGE::FUNCTION:
-		return SetFunc(param, value);
+		return SetFunc(param, std::wstring(value, value + valueLen));
 		break;
 	default:
 		assert(0);
@@ -1201,10 +1232,20 @@ bool StringParamDesc::TrySetConst(void* param, const wchar_t* value) const
 	return true;
 }
 
+void StringParamDesc::SetConst(void* param, const wchar_t* value, size_t valueLen) const
+{
+	if(!TrySetConst(param, value, valueLen))
+		throw common::Error(ERR_MSG_CANNOT_SET_VALUE, __TFILE__, __LINE__);
+}
+
+bool StringParamDesc::TrySetConst(void* param, const wchar_t* value) const
+{
+    return TrySetConst(param, value, wcslen(value));
+}
+
 void StringParamDesc::SetConst(void* param, const wchar_t* value) const
 {
-	if(!TrySetConst(param, value))
-		throw common::Error(ERR_MSG_CANNOT_SET_VALUE, __TFILE__, __LINE__);
+    SetConst(param, value, wcslen(value));
 }
 
 void StringParamDesc::Copy(void* dstParam, const void* srcParam) const
@@ -1404,15 +1445,24 @@ size_t VecParamDesc<Vec_t>::GetParamSize() const
 template<typename Vec_t>
 bool VecParamDesc<Vec_t>::ValueInMinMax(Value_t value) const
 {
-	return common::AllGreaterEqual(value, MinValue) &&
-		common::AllLessEqual(value, MaxValue);
+    Vec_t ref;
+    Replicate(ref, this->MinValue);
+    if(!common::AllGreaterEqual(value, ref))
+        return false;
+    Replicate(ref, this->MaxValue);
+    if(!common::AllLessEqual(value, ref))
+        return false;
+    return true;
 }
 
 template<typename Vec_t>
 void VecParamDesc<Vec_t>::ClampValueToMinMax(Value_t& value) const
 {
-	common::Max(&value, value, MinValue);
-	common::Min(&value, value, MaxValue);
+    Vec_t ref;
+    Replicate(ref, this->MinValue);
+	common::Max(&value, value, ref);
+    Replicate(ref, this->MaxValue);
+	common::Min(&value, value, ref);
 }
 
 template<typename Vec_t>
@@ -1545,22 +1595,6 @@ bool VecParamDesc<Vec_t>::Parse(void* dstParam, const wchar_t* src) const
 		return TrySetConst(dstParam, value);
 	else
 		return false;
-}
-
-template<typename Vec_t>
-Vec_t VecParamDesc<Vec_t>::DefaultMinValue()
-{
-	Vec_t v;
-	Replicate(v, -FLT_MAX);
-	return v;
-}
-
-template<typename Vec_t>
-Vec_t VecParamDesc<Vec_t>::DefaultMaxValue()
-{
-	Vec_t v;
-	Replicate(v, FLT_MAX);
-	return v;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

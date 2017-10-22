@@ -391,35 +391,38 @@ bool LoadObjFromTokDoc(void* dstObj, const StructDesc& structDesc, const common:
 
 	for(size_t i = 0, count = structDesc.Params.size(); i < count; ++i)
 	{
-		common::tokdoc::Node* subNode = srcNode.FindFirstChild(structDesc.Names[i]);
-		if(subNode)
-		{
-			ERR_TRY;
-			if(!LoadParamFromTokDoc(
-				structDesc.AccessRawParam(dstObj, i),
-				*structDesc.Params[i],
-				*subNode,
-				config))
-			{
-				allOk = false;
-				if(config.WarningPrinter)
-					config.WarningPrinter->printf(L"RegScript2 TokDoc parameter \"%s\" loading failed.", structDesc.Names[i].c_str());
-			}
-			ERR_CATCH(L"RegScript2 TokDoc parameter: " + structDesc.Names[i]);
-		}
-		else
-		{
-			if(IsFlagOptional(config.Flags))
-			{
-				if((config.Flags & TOKDOC_FLAG_DEFAULT))
-					structDesc.SetParamToDefault(dstObj, i);
-				if(config.WarningPrinter)
-					config.WarningPrinter->printf(L"RegScript2 TokDoc parameter \"%s\" not found.", structDesc.Names[i].c_str());
-				allOk = false;
-			}
-			else
-				throw common::Error(L"Parameter not found.", __TFILE__, __LINE__);
-		}
+        if(structDesc.Params[i]->CanWrite())
+        {
+		    common::tokdoc::Node* subNode = srcNode.FindFirstChild(structDesc.Names[i]);
+		    if(subNode)
+		    {
+			    ERR_TRY;
+			    if(!LoadParamFromTokDoc(
+				    structDesc.AccessRawParam(dstObj, i),
+				    *structDesc.Params[i],
+				    *subNode,
+				    config))
+			    {
+				    allOk = false;
+				    if(config.WarningPrinter)
+					    config.WarningPrinter->printf(L"RegScript2 TokDoc parameter \"%s\" loading failed.", structDesc.Names[i].c_str());
+			    }
+			    ERR_CATCH(L"RegScript2 TokDoc parameter: " + structDesc.Names[i]);
+		    }
+		    else
+		    {
+			    if(IsFlagOptional(config.Flags))
+			    {
+				    if((config.Flags & TOKDOC_FLAG_DEFAULT))
+					    structDesc.SetParamToDefault(dstObj, i);
+				    if(config.WarningPrinter)
+					    config.WarningPrinter->printf(L"RegScript2 TokDoc parameter \"%s\" not found.", structDesc.Names[i].c_str());
+				    allOk = false;
+			    }
+			    else
+				    throw common::Error(L"Parameter not found.", __TFILE__, __LINE__);
+		    }
+        }
 	}
 	return allOk;
 }

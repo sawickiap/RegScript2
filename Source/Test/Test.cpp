@@ -1598,22 +1598,22 @@ unique_ptr<rs2::StructDesc> RawValuesStruct::CreateStructDesc(uint32_t additiona
 		offsetof(RawValuesStruct, Vec2Value),
 		new rs2::Vec2ParamDesc(rs2::STORAGE::RAW,
 			VEC2(1.f, 2.f))).
-			SetMin(VEC2(100.f, 100.f)).
-			SetMax(VEC2(200.f, 200.f));
+			SetMin(100.f).
+			SetMax(200.f);
 	structDesc->AddParam(
 		L"Vec3Value",
 		offsetof(RawValuesStruct, Vec3Value),
 		new rs2::Vec3ParamDesc(rs2::STORAGE::RAW,
 			VEC3(1.f, 2.f, 3.f))).
-			SetMin(VEC3(100.f, 100.f, 100.f)).
-			SetMax(VEC3(200.f, 200.f, 200.f));
+			SetMin(100.f).
+			SetMax(200.f);
 	structDesc->AddParam(
 		L"Vec4Value",
 		offsetof(RawValuesStruct, Vec4Value),
 		new rs2::Vec4ParamDesc(rs2::STORAGE::RAW,
 			VEC4(1.f, 2.f, 3.f, 4.f))).
-			SetMin(VEC4(100.f, 100.f, 100.f, 100.f)).
-			SetMax(VEC4(200.f, 200.f, 200.f, 200.f));
+			SetMin(100.f).
+			SetMax(200.f);
 
 	for(auto paramPtr : structDesc->Params)
 		paramPtr->Flags |= additionalFlags;

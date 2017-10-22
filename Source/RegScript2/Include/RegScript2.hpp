@@ -35,7 +35,7 @@ public:
 	// Optional. If null, values are just indices to ItemNames: 0, 1, 2, ...
 	const int32_t* ItemValues;
 
-	// All passed pointers must exist during lifetime of this object. Data are not copied.
+	// All passed pointers must exist during lifetime of this object. Data is not copied.
 	EnumDesc(
 		const wchar_t* name,
 		size_t itemCount,
@@ -95,7 +95,7 @@ class Param
 private:
 #ifdef _DEBUG
 	static const uint32_t MAGIC_NUMBER_VALUE = 0x42346813;
-	uint32_t m_MagicNumber;
+	uint32_t m_MagicNumber = 0x42346813;
 #endif
 
 public:
@@ -108,9 +108,6 @@ public:
 	};
 
 	Param() :
-#ifdef _DEBUG
-		m_MagicNumber(MAGIC_NUMBER_VALUE),
-#endif
 		m_ValueType(VALUE_TYPE::CONSTANT)
 	{
 	}
@@ -238,7 +235,9 @@ public:
 	bool IsConst() const { return true; } // TODO
 	bool TryGetConst(std::wstring& outValue) const { outValue = m_Value; return true; } // TODO
 	void GetConst(std::wstring& outValue) const;
+    const std::wstring* AccessConst() const;
 
+	void SetConst(const wchar_t* value, size_t valueLen);
 	void SetConst(const wchar_t* value);
 	StringParam& operator=(const std::wstring& value) { SetConst(value.c_str()); return *this; }
 	StringParam& operator=(const wchar_t* value) { SetConst(value); return *this; }
@@ -317,7 +316,8 @@ public:
 	ParamDesc(STORAGE storage, uint32_t flags) : Flags(flags), m_Storage(storage) { }
 	virtual ~ParamDesc() { }
 
-	ParamDesc& SetFlags(uint32_t flags) { Flags = flags; return *this; }
+	ParamDesc& SetFlags(uint32_t flags) { this->Flags = flags; return *this; }
+	ParamDesc& AddFlags(uint32_t flags) { this->Flags |= flags; return *this; }
 	ParamDesc& SetUnitName(const wchar_t* unitName) { UnitName = unitName; return *this; }
 
 	STORAGE GetStorage() const { return m_Storage; }
@@ -750,7 +750,13 @@ public:
 	typedef std::function<bool(Value_t&, const void*)> GetFunc_t;
 	typedef std::function<bool(void*, const Value_t&)> SetFunc_t;
 
-	GetFunc_t GetFunc;
+	enum STRING_FLAGS
+	{
+		FLAG_FORMAT_MULTILINE = 0x10000,
+		FLAG_FORMAT_PASSWORD  = 0x20000,
+	};
+
+    GetFunc_t GetFunc;
 	SetFunc_t SetFunc;
 
 	StringParamDesc(STORAGE storage, const Value_t& defaultValue = Value_t(), uint32_t flags = 0) :
@@ -779,10 +785,13 @@ public:
 	virtual bool IsConst(const void* param) const;
 	bool TryGetConst(Value_t& outValue, const void* param) const;
 	void GetConst(Value_t& outValue, const void* param) const;
+    const Value_t* AccessConst(const void* param) const;
+	bool TrySetConst(void* param, const wchar_t* value, size_t valueLen) const;
+	void SetConst(void* param, const wchar_t* value, size_t valueLen) const;
 	bool TrySetConst(void* param, const wchar_t* value) const;
 	void SetConst(void* param, const wchar_t* value) const;
-	bool TrySetConst(void* param, const std::wstring& value) const { return TrySetConst(param, value.c_str()); }
-	void SetConst(void* param, const std::wstring& value) const { SetConst(param, value.c_str()); }
+	bool TrySetConst(void* param, const std::wstring& value) const { return TrySetConst(param, value.data(), value.length()); }
+	void SetConst(void* param, const std::wstring& value) const { SetConst(param, value.data(), value.length()); }
 
 	virtual void SetToDefault(void* param) const { SetConst(param, DefaultValue.c_str()); }
 	virtual void Copy(void* dstParam, const void* srcParam) const;
@@ -863,18 +872,25 @@ public:
 	typedef std::function<bool(Value_t&, const void*)> GetFunc_t;
 	typedef std::function<bool(void*, const Value_t&)> SetFunc_t;
 
-	GetFunc_t GetFunc;
+    enum VEC_FLAGS
+	{
+		FLAG_FORMAT_COLOR = 0x10000, // Use with vec3 (RGB) or vec4 (RGBA).
+        FLAG_FORMAT_RANGE = 0x20000, // Use with vec2 (min...max) or vec4 (rect: (min.x,min.y)...(max.x,max.y)).
+	};
+
+    GetFunc_t GetFunc;
 	SetFunc_t SetFunc;
 
-	Value_t MinValue, MaxValue;
+	float MinValue, MaxValue, Step;
 
 	VecParamDesc(
 		STORAGE storage,
 		Value_t defaultValue = Value_t(),
 		uint32_t flags = 0) :
 		TypedParamDesc<Vec_t>(storage, defaultValue, flags),
-		MinValue(DefaultMinValue()),
-		MaxValue(DefaultMaxValue())
+		MinValue(-FLT_MAX),
+		MaxValue(FLT_MAX),
+        Step(1.f)
 	{
 	}
 	VecParamDesc(
@@ -886,14 +902,16 @@ public:
 		TypedParamDesc<Vec_t>(STORAGE::FUNCTION, defaultValue, flags),
 		GetFunc(getFunc),
 		SetFunc(setFunc),
-		MinValue(DefaultMinValue()),
-		MaxValue(DefaultMaxValue())
+		MinValue(-FLT_MAX),
+		MaxValue(FLT_MAX),
+        Step(1.f)
 	{
 	}
 
 	VecParamDesc<Vec_t>& SetDefault(const Value_t& defaultValue) { DefaultValue = defaultValue; return *this; }
-	VecParamDesc<Vec_t>& SetMin(const Value_t& minValue) { MinValue = minValue; return *this; }
-	VecParamDesc<Vec_t>& SetMax(const Value_t& maxValue) { MaxValue = maxValue; return *this; }
+	VecParamDesc<Vec_t>& SetMin(float minValue) { this->MinValue = minValue; return *this; }
+	VecParamDesc<Vec_t>& SetMax(float maxValue) { this->MaxValue = maxValue; return *this; }
+	VecParamDesc<Vec_t>& SetStep(float step) { this->Step = step; return *this; }
 
 	virtual size_t GetParamSize() const;
 
@@ -917,10 +935,6 @@ public:
 	virtual void Copy(void* dstParam, const void* srcParam) const;
 	virtual bool ToString(std::wstring& out, const void* srcParam) const;
 	virtual bool Parse(void* dstParam, const wchar_t* src) const;
-
-private:
-	static Vec_t DefaultMinValue();
-	static Vec_t DefaultMaxValue();
 };
 
 typedef VecParamDesc<common::VEC2> Vec2ParamDesc;
@@ -1006,6 +1020,12 @@ inline size_t FixedSizeArrayParamDesc::GetParamSize() const
 
 } // namespace RegScript2
 
+#define RS_GET_ENUM_DESC_BODY(enumName, itemCount, itemNames, ...) \
+    static unique_ptr<rs2::TypedEnumDesc<enumName>> enumDesc = \
+        std::make_unique<rs2::TypedEnumDesc<enumName>>( \
+            L#enumName, (size_t)itemCount, itemNames, __VA_ARGS__); \
+    return enumDesc.get();
+
 #define RS2_GET_STRUCT_DESC_BEGIN(structName, ...) \
 	static unique_ptr<rs2::StructDesc> structDesc; \
 	if(!structDesc) \
@@ -1072,11 +1092,21 @@ inline size_t FixedSizeArrayParamDesc::GetParamSize() const
 		L#paramName, \
 		offsetof(Struct_t, paramName), \
 		new rs2::Vec4ParamDesc(storage, __VA_ARGS__)))
+#define RS2_ADD_PARAM_ENUM(paramName, storage, ...) \
+	(structDesc->AddParam( \
+		L#paramName, \
+		offsetof(Struct_t, paramName), \
+		new rs2::EnumParamDesc(storage, __VA_ARGS__)))
 
 
 // Initializes float param with Format=Percent|MinMaxClampOnSet, Min=0, Max=1, Step=0.02.
 #define RS2_ADD_PARAM_FLOAT_PERCENT(paramName, storage, defaultValue) \
-	RS2_ADD_PARAM_FLOAT(paramName, storage, defaultValue, RegScript2::FloatParamDesc::FLAG_FORMAT_PERCENT | rs2::ParamDesc::FLAG_MINMAX_CLAMP_ON_SET).SetMin(0.f).SetMax(1.f).SetStep(0.02f)
+	RS2_ADD_PARAM_FLOAT(paramName, storage, defaultValue, RegScript2::FloatParamDesc::FLAG_FORMAT_PERCENT | rs2::ParamDesc::FLAG_MINMAX_CLAMP_ON_SET).SetMin(0.f).SetMax(1.f).SetStep(0.01f)
+// Initializes vector param with Format=Color|MinMaxClampOnSet, Min=0, Max=1, Step=1/256.
+#define RS2_ADD_PARAM_VEC3_COLOR(paramName, storage, defaultValue) \
+	RS2_ADD_PARAM_VEC3(paramName, storage, defaultValue, RegScript2::Vec3ParamDesc::FLAG_FORMAT_COLOR | rs2::ParamDesc::FLAG_MINMAX_CLAMP_ON_SET).SetMin(0.f).SetMax(1.f).SetStep(1.f/256.f)
+#define RS2_ADD_PARAM_VEC4_COLOR(paramName, storage, defaultValue) \
+	RS2_ADD_PARAM_VEC4(paramName, storage, defaultValue, RegScript2::Vec4ParamDesc::FLAG_FORMAT_COLOR | rs2::ParamDesc::FLAG_MINMAX_CLAMP_ON_SET).SetMin(0.f).SetMax(1.f).SetStep(1.f/256.f)
 
 
 #define RS2_ADD_PARAM_BOOL_FUNCTION(paramName, getFunc, setFunc, ...) \
