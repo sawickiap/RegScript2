@@ -1020,7 +1020,7 @@ inline size_t FixedSizeArrayParamDesc::GetParamSize() const
 
 } // namespace RegScript2
 
-#define RS_GET_ENUM_DESC_BODY(enumName, itemCount, itemNames, ...) \
+#define RS2_GET_ENUM_DESC_BODY(enumName, itemCount, itemNames, ...) \
     static unique_ptr<rs2::TypedEnumDesc<enumName>> enumDesc = \
         std::make_unique<rs2::TypedEnumDesc<enumName>>( \
             L#enumName, (size_t)itemCount, itemNames, __VA_ARGS__); \

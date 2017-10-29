@@ -82,6 +82,14 @@ void SaveParamToTokDoc(common::tokdoc::Node& dstNode, const void* srcParam, cons
 	}
 }
 
+void SaveParamToTokDoc(common::tokdoc::Node& dstNode, const void* srcParam, const EnumParamDesc& paramDesc)
+{
+	int32_t value = paramDesc.GetConst(srcParam);
+    wstring valueStr;
+    paramDesc.m_EnumDesc->ValueToStr(valueStr, value);
+	common::tokdoc::NodeFrom(dstNode, valueStr);
+}
+
 // ADD NEW PARAMETER TYPES HERE.
 
 void SaveParamToTokDoc(common::tokdoc::Node& dstNode, const void* srcParam, const ParamDesc& paramDesc)
@@ -108,6 +116,8 @@ void SaveParamToTokDoc(common::tokdoc::Node& dstNode, const void* srcParam, cons
 		return SaveParamToTokDoc(dstNode, srcParam, (const StructParamDesc&)paramDesc);
 	if(typeid(FixedSizeArrayParamDesc) == typeid(paramDesc))
 		return SaveParamToTokDoc(dstNode, srcParam, (const FixedSizeArrayParamDesc&)paramDesc);
+	if(typeid(EnumParamDesc) == typeid(paramDesc))
+		return SaveParamToTokDoc(dstNode, srcParam, (const EnumParamDesc&)paramDesc);
 	// ADD NEW PARAMETER TYPES HERE.
 
 	assert(!"Unsupported parameter type.");
@@ -350,6 +360,40 @@ bool LoadParamFromTokDoc(void* dstParam, const FixedSizeArrayParamDesc& paramDes
 	return allOk;
 }
 
+bool LoadParamFromTokDoc(void* dstParam, const EnumParamDesc& paramDesc, const common::tokdoc::Node& srcNode, const STokDocLoadConfig& config)
+{
+	wstring valueStr;
+	if(common::tokdoc::NodeTo(valueStr, srcNode, IsFlagRequired(config.Flags)))
+	{
+        int32_t value;
+        if(paramDesc.m_EnumDesc->StrToValue(value, valueStr.c_str(),
+            false, // caseSensitive
+            true)) // allowInteger
+        {
+		    paramDesc.SetConst(dstParam, value);
+		    return true;
+        }
+        else if((config.Flags & TOKDOC_FLAG_OPTIONAL_CORRECT))
+        {
+		    if((config.Flags & TOKDOC_FLAG_DEFAULT))
+			    paramDesc.SetToDefault(dstParam);
+		    if(config.WarningPrinter)
+			    config.WarningPrinter->printf(L"Invalid enum value.");
+            return false;
+        }
+        else
+            throw common::Error(L"Invalid enum value.", __TFILE__, __LINE__);
+	}
+	else
+	{
+		if((config.Flags & TOKDOC_FLAG_DEFAULT))
+			paramDesc.SetToDefault(dstParam);
+		if(config.WarningPrinter)
+			config.WarningPrinter->printf(L"Cannot load enum value.");
+		return false;
+	}
+}
+
 // ADD NEW PARAMETER TYPES HERE.
 
 bool LoadParamFromTokDoc(void* dstParam, const ParamDesc& paramDesc, const common::tokdoc::Node& srcNode, const STokDocLoadConfig& config)
@@ -376,6 +420,8 @@ bool LoadParamFromTokDoc(void* dstParam, const ParamDesc& paramDesc, const commo
 		return LoadParamFromTokDoc(dstParam, (const StructParamDesc&)paramDesc, srcNode, config);
 	if(typeid(FixedSizeArrayParamDesc) == typeid(paramDesc))
 		return LoadParamFromTokDoc(dstParam, (const FixedSizeArrayParamDesc&)paramDesc, srcNode, config);
+	if(typeid(EnumParamDesc) == typeid(paramDesc))
+		return LoadParamFromTokDoc(dstParam, (const EnumParamDesc&)paramDesc, srcNode, config);
 	// ADD NEW PARAMETER TYPES HERE.
 	
 	assert(!"Unsupported parameter type.");
